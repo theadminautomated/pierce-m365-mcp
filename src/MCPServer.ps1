@@ -107,6 +107,10 @@ function Initialize-Configuration {
             Write-Warning "Failed to load configuration file: $ConfigPath"
         }
     }
+
+    if (-not $config.ContainsKey('AIProviders')) {
+        $config.AIProviders = @()
+    }
     
     return $config
 }
