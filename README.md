@@ -235,6 +235,7 @@ AI providers are defined in `mcp.config.json`. Each provider entry includes an e
 ```
 
 Swap providers or add new ones by editing this file and restarting the server. No code changes are required.
+The server validates that at least one provider is defined and that `DefaultAIProvider` matches an entry in the `AIProviders` array.
 
 ### Autostart Service
 Use `scripts/install-autostart.ps1` to register the watchdog service that keeps

@@ -19,9 +19,9 @@ $files = @(
     'AIManager.ps1',
     'WebSearchEngine.ps1',
     'PRSuggestionEngine.ps1',
-    'MCPServerClass.ps1',
     'OrchestrationEngine.ps1',
-    'AsyncRequestProcessor.ps1'
+    'AsyncRequestProcessor.ps1',
+    'MCPServerClass.ps1'
 )
 foreach ($file in $files) {
     $path = Join-Path $coreDir $file
