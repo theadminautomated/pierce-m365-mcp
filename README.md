@@ -81,6 +81,8 @@ The system includes a sophisticated, open-source vector memory bank that provide
 ### Internal Reasoning Engine
 The Internal Reasoning Engine aggregates session context, historical actions, and tool outputs to automatically analyze errors or ambiguous input. It now performs predictive plan optimization and dynamic rerouting when failures occur. All checkpoints are persisted for recovery and no workflow requires human confirmation.
 
+The release candidate introduces an improved context aggregation routine that normalizes session data and removes ambiguity before analysis. This enhancement enables more accurate corrections and allows the engine to generate self-healing plans with minimal iteration.
+
 **Python Implementation**
 
 To support advanced reasoning and easier integration with AI libraries, the reasoning component has been refactored into a standalone Python module located in `src/python/internal_reasoning_engine.py`. The PowerShell orchestration engine invokes this module for complex analysis, ensuring language-agnostic operation and modern extensibility.
@@ -179,6 +181,7 @@ $search = $server.OrchestrationEngine.WebSearchEngine.Search('m365 mailbox deleg
 4. Install Python dependencies with `pip install -r requirements.txt`
 5. Begin issuing natural language automation requests
 6. For a very simple overview, read `docs/HOW-TO-USE.md`
+7. Validate the installation by running `./scripts/test-core-modules.ps1`
 
 ### Autostart Service
 Use `scripts/install-autostart.ps1` to register the watchdog service that keeps
@@ -318,7 +321,7 @@ a pull request via `gh`, logs the activity, and sends a Teams notification.
 
 ## CHANGELOG
 
-### Version 2.0.0 (Current)
+### Version 2.1.0-rc (Current)
 - Complete architectural overhaul to agentic orchestration
 - Enhanced security and compliance framework
 - Modular core engine implementation
@@ -350,5 +353,5 @@ This software is for internal Pierce County use only and may not be distributed,
 ---
 
 *Last Updated: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") UTC*
-*Version: 2.0.0-enterprise*
+*Version: 2.1.0-rc*
 *Build: $(Get-Random)*

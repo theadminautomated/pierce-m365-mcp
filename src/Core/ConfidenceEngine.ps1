@@ -7,7 +7,7 @@
     Stores success metrics per action type and determines if confidence falls below threshold.
 .NOTES
     Author: Pierce County IT Solutions Architecture
-    Version: 2.0.0
+    Version: 2.1.0-rc
 #>
 
 using namespace System.Collections.Concurrent

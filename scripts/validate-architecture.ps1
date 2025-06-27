@@ -114,7 +114,7 @@ Write-Host "`nOVERALL STATUS: $statusIcon $($ValidationResults.OverallStatus)" -
 Write-Host "="*60 -ForegroundColor Cyan
 
 if ($ValidationResults.OverallStatus -eq "SUCCESS") {
-    Write-Host "`n🚀 Pierce County M365 MCP Server v2.0.0 Enterprise Architecture is ready!" -ForegroundColor Green
+    Write-Host "`n🚀 Pierce County M365 MCP Server v2.1.0-rc Enterprise Architecture is ready!" -ForegroundColor Green
     Write-Host "   - Agentic orchestration: ENABLED" -ForegroundColor Green
     Write-Host "   - Enterprise security: ACTIVE" -ForegroundColor Green  
     Write-Host "   - Audit trails: CONFIGURED" -ForegroundColor Green

@@ -3,7 +3,9 @@
 # Test MCP core modules one by one
 Write-Host "🧪 Testing Core Modules..." -ForegroundColor Cyan
 
-$sourceRoot = "c:\Users\jtaylo7\Documents\GitHub\default-mcp\src"
+# Determine repository root dynamically so the script works in any environment
+$repoRoot   = Split-Path -Parent $PSCommandPath | Split-Path -Parent
+$sourceRoot = Join-Path $repoRoot 'src'
 $coreModules = @(
     'Logger.ps1',
     'VectorMemoryBank.ps1',

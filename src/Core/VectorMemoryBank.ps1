@@ -8,7 +8,7 @@
     Based on open-source vector database patterns and semantic similarity algorithms.
 .NOTES
     Author: Pierce County IT Solutions Architecture
-    Version: 2.0.0
+    Version: 2.1.0-rc
     Memory Architecture: Vector-based with semantic search capabilities
 #>
 
