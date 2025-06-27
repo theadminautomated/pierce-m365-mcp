@@ -154,6 +154,7 @@ class MCPServer {
     
     hidden [hashtable] HandleRequest([hashtable]$request) {
         $this.PerformanceMonitor.StartOperation("MessageProcessing")
+        $success = $true
         
         try {
             # Log incoming request (sanitized)
@@ -192,6 +193,8 @@ class MCPServer {
                     }
                 }
             }
+
+            return $null
         }
         catch {
             $this.Logger.Error("Request handling failed", @{
@@ -394,6 +397,7 @@ class MCPServer {
     hidden [hashtable] HandlePromptsGet([hashtable]$request) {
         $promptName = $request.params.name
         $arguments = $request.params.arguments
+        $prompt = ""
         
         switch ($promptName) {
             "enterprise_analysis" {
@@ -467,6 +471,7 @@ class MCPServer {
     
     hidden [hashtable] HandleResourcesRead([hashtable]$request) {
         $uri = $request.params.uri
+        $content = ""
         
         switch -Regex ($uri) {
             "pierce://docs/governance" {
