@@ -453,14 +453,23 @@ class EventLogTarget : LogTargetBase {
         $this.Source = $source
         $this.LogName = "Application"
         
-        # Create event source if it doesn't exist
-        if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
+        # Create event source if it doesn't exist. Some environments
+        # (e.g. Security log access restrictions) throw when checking
+        # SourceExists, so wrap in try/catch and fall back to the
+        # Application log as needed.
+        $exists = $false
+        try {
+            $exists = [System.Diagnostics.EventLog]::SourceExists($source)
+        } catch {
+            Write-Warning "Cannot check event log source '$source' – using Application log."
+        }
+
+        if (-not $exists) {
             try {
-                [System.Diagnostics.EventLog]::CreateEventSource($source, $this.LogName)
-            }
-            catch {
+                [System.Diagnostics.EventLog]::CreateEventSource($source, 'Application')
+            } catch {
                 # Might not have permissions - use default source
-                $this.Source = "Application"
+                $this.Source = 'Application'
             }
         }
     }

@@ -200,6 +200,7 @@ $search = $server.OrchestrationEngine.WebSearchEngine.Search('m365 mailbox deleg
 - Copilot Studio or AIFoundry compatible environment
 - Python 3.10+ (for the internal reasoning engine)
 - `requests` library for Python
+- Docker Desktop or Docker Engine with the daemon running
 
 ### Quick Start
 1. Clone the repository to your local machine
@@ -249,6 +250,9 @@ Build the included Docker image to run the server behind a lightweight REST API:
 docker build -t pierce-mcp .
 docker run -p 3000:3000 pierce-mcp
 ```
+
+If the build fails with errors like `dockerDesktopLinuxEngine/_ping`, verify
+that the Docker daemon is running by executing `docker info` first.
 
 The container launches a FastAPI gateway that relays requests to the PowerShell
 orchestration engine. Specify an alternate script path with the `MCP_SCRIPT`
