@@ -43,7 +43,8 @@ $coreModules = @(
     'RuleBasedParser.ps1',     # Fallback regex/dictionary parser
     'EntityExtractor.ps1',      # Entity extraction
     'WebSearchEngine.ps1',     # Contextual web search
-    'OrchestrationEngine.ps1'   # Main orchestration engine
+    'OrchestrationEngine.ps1',  # Main orchestration engine
+    'AsyncRequestProcessor.ps1' # Parallel request processing
 )
 
 foreach ($module in $coreModules) {

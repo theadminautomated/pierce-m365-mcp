@@ -240,6 +240,9 @@ For production environments, refer to the deployment guide in `/docs/deployment/
 - `code_execution`: Secure sandboxed script execution and validation
 - `pr_suggestion`: Automatic draft and submission of pull requests with full test logs
 
+### Asynchronous Execution
+Use `tools/callAsync` to submit a request without waiting for completion. The server returns a `jobId` that can be polled with `tools/result` to retrieve the final output when ready.
+
 ## MONITORING & TELEMETRY
 
 ### Performance Metrics
