@@ -144,7 +144,7 @@ class VectorMemoryBank {
             $queryVector = $this.SemanticIndex.GenerateEmbedding($query)
             
             # Semantic search
-            $semanticResults = $this.SemanticIndex.Search($queryVector, $maxResults * 2)
+            $semanticResults = $this.SemanticIndex.SearchWithFallback($query, $maxResults * 2)
             
             # Score and rank results
             foreach ($result in $semanticResults) {

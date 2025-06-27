@@ -139,85 +139,61 @@ class SharedMailboxTool {
     [hashtable] Execute([hashtable]$params) {
         $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         $sessionId = [Guid]::NewGuid().ToString()
-        
+        $context = @{ Params = $params; Mailbox = $null; Audit = $null; Response = $null }
+
+        $states = @{
+            Start = @{ Handler = {
+                $context.Audit = @{
+                    sessionId = $sessionId
+                    timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                    initiator = $context.Params.Initiator ?? "MCPAgent"
+                    reason = $context.Params.Reason ?? "Automated shared mailbox creation"
+                    complianceFlags = @()
+                }
+                $this.Logger.LogInfo("Shared mailbox creation session started", @{ sessionId = $sessionId; displayName = $context.Params.DisplayName })
+                if (-not $context.Params.PrimarySmtpAddress) { $context.Params.PrimarySmtpAddress = $this.GenerateSmtpAddress($context.Params.DisplayName, $context.Params.Department) }
+                return 'Validate'
+            } }
+            Validate = @{ Handler = {
+                $val = $this.ValidateInputs($context.Params)
+                if ($val.HasErrors) { $context.Response = $this.BuildErrorResponse($val.Errors, $context.Audit); return $null }
+                return 'Security'
+            } }
+            Security = @{ Handler = {
+                $sec = $this.Security.ValidateMailboxCreationRequest($context.Params.PrimarySmtpAddress, $context.Params.Owner, $context.Audit.initiator)
+                if (-not $sec.IsAuthorized) { $context.Response = $this.BuildSecurityErrorResponse($sec, $context.Audit); return $null }
+                return 'Connect'
+            } }
+            Connect = @{ Handler = {
+                $conn = $this.InitializeExchangeConnection()
+                if (-not $conn.Success) { $context.Response = $this.BuildConnectionErrorResponse($conn, $context.Audit); return $null }
+                return 'Create'
+            } }
+            Create = @{ Handler = {
+                $mail = $this.CreateSharedMailbox($context.Params, $sessionId)
+                if (-not $mail.Success) { $context.Response = $this.BuildMailboxCreationErrorResponse($mail, $context.Audit); return $null }
+                $context.Mailbox = $mail.Mailbox
+                return 'Permissions'
+            } }
+            Permissions = @{ Handler = {
+                $perms = $this.ConfigureMailboxPermissions($context.Mailbox, $context.Params, $sessionId)
+                $context.Response = $this.BuildSuccessResponse($context.Mailbox, $perms, $context.Audit, $stopwatch.ElapsedMilliseconds)
+                $this.Logger.LogInfo("Shared mailbox creation completed", @{ sessionId = $sessionId; mailbox = $context.Mailbox.PrimarySmtpAddress })
+                return $null
+            } }
+        }
+
         try {
-            # Initialize audit trail
-            $auditTrail = @{
-                sessionId = $sessionId
-                timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                initiator = $params.Initiator ?? "MCPAgent"
-                reason = $params.Reason ?? "Automated shared mailbox creation"
-                complianceFlags = @()
-            }
-
-            $this.Logger.LogInfo("Shared mailbox creation session started", @{
-                sessionId = $sessionId
-                displayName = $params.DisplayName
-                owner = $params.Owner
-                initiator = $auditTrail.initiator
-            })
-
-            # Generate primary SMTP address if not provided
-            if (-not $params.PrimarySmtpAddress) {
-                $params.PrimarySmtpAddress = $this.GenerateSmtpAddress($params.DisplayName, $params.Department)
-            }
-
-            # Validate inputs
-            $validationResult = $this.ValidateInputs($params)
-            if ($validationResult.HasErrors) {
-                return $this.BuildErrorResponse($validationResult.Errors, $auditTrail)
-            }
-
-            # Security validation
-            $securityValidation = $this.Security.ValidateMailboxCreationRequest($params.PrimarySmtpAddress, $params.Owner, $auditTrail.initiator)
-            if (-not $securityValidation.IsAuthorized) {
-                return $this.BuildSecurityErrorResponse($securityValidation, $auditTrail)
-            }
-
-            # Initialize Exchange connection
-            $connectionResult = $this.InitializeExchangeConnection()
-            if (-not $connectionResult.Success) {
-                return $this.BuildConnectionErrorResponse($connectionResult, $auditTrail)
-            }
-
-            # Create shared mailbox
-            $mailboxResult = $this.CreateSharedMailbox($params, $sessionId)
-            if (-not $mailboxResult.Success) {
-                return $this.BuildMailboxCreationErrorResponse($mailboxResult, $auditTrail)
-            }
-
-            # Configure permissions
-            $permissionsResult = $this.ConfigureMailboxPermissions($mailboxResult.Mailbox, $params, $sessionId)
-
-            # Build comprehensive response
-            $response = $this.BuildSuccessResponse($mailboxResult, $permissionsResult, $auditTrail, $stopwatch.ElapsedMilliseconds)
-            
-            $this.Logger.LogInfo("Shared mailbox creation completed", @{
-                sessionId = $sessionId
-                mailbox = $mailboxResult.Mailbox.PrimarySmtpAddress
-                duration = $stopwatch.ElapsedMilliseconds
-                status = $response.status
-            })
-
-            return $response
-
+            $sm = [StateMachine]::new($states, 'Start', $this.Logger)
+            $sm.Run($context)
         } catch {
-            $this.Logger.LogError("Critical error in shared mailbox creation", @{
-                sessionId = $sessionId
-                error = $_.Exception.Message
-                stackTrace = $_.ScriptStackTrace
-            })
-
-            return @{
-                status = "failed"
-                error = "Critical system error during mailbox creation"
-                sessionId = $sessionId
-                timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                auditTrail = $auditTrail
-            }
+            $this.Logger.LogError("Critical error in shared mailbox creation", @{ sessionId = $sessionId; error = $_.Exception.Message })
+            $context.Response = @{ status = 'failed'; error = 'Critical system error during mailbox creation'; sessionId = $sessionId; timestamp = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffZ'); auditTrail = $context.Audit }
         } finally {
             $stopwatch.Stop()
         }
+
+        return $context.Response
     }
 
     [string] GenerateSmtpAddress([string]$displayName, [string]$department) {

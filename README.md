@@ -47,6 +47,7 @@ src/
 - **Context Persistence**: Advanced vector-based memory with semantic search
 - **Self-Correction**: Automatic error detection, analysis, and remediation
 - **Internal Reasoning Engine**: Aggregates context to resolve ambiguity and errors automatically
+- **Rule-Based Fallback Parsing**: Regex and dictionary extraction when AI confidence is low
 - **Confidence Interval Engine**: Measures statistical confidence for every action
 - **Sandboxed Code Execution**: Validate and simulate scripts in a secure sandbox
 - **Performance Learning**: Continuous optimization based on execution patterns
@@ -59,6 +60,7 @@ src/
 - **Predictive Optimization**: AI-driven resource management and license recovery
 - **Vector Memory Bank**: Semantic search across historical operations and context
 - **Pattern Analysis**: Automated detection of operational patterns and anomalies
+- **Table-Driven State Machines**: Deterministic workflows with explicit transitions
 
 ## MEMORY & INTELLIGENCE SYSTEM
 
@@ -281,6 +283,8 @@ For production environments, refer to the deployment guide in `/docs/deployment/
 - Modular core engine implementation
 - Persistent context and relationship management
 - Advanced entity extraction and validation
+- Rule-based parsing fallback for low-confidence scenarios
+- Table-driven state machines for deterministic workflows
 
 ### Version 1.0.1 (Legacy)
 - Basic MCP server implementation

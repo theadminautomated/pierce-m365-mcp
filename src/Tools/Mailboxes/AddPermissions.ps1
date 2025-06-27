@@ -131,87 +131,65 @@ class MailboxPermissionsTool {
     [hashtable] Execute([hashtable]$params) {
         $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         $sessionId = [Guid]::NewGuid().ToString()
-        
+        $context = @{ Params = $params; Results = @(); Audit = $null; Response = $null }
+
+        $states = @{
+            Start = @{ Handler = {
+                $context.Audit = @{
+                    sessionId = $sessionId
+                    timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                    initiator = $context.Params.Initiator ?? "MCPAgent"
+                    reason = $context.Params.Reason ?? "Automated permission assignment"
+                    complianceFlags = @()
+                }
+                $this.Logger.LogInfo("Mailbox permissions session started", @{ sessionId = $sessionId; mailbox = $context.Params.Mailbox })
+                return 'Validate'
+            } }
+            Validate = @{ Handler = {
+                $result = $this.ValidateInputs($context.Params)
+                if ($result.HasErrors) { $context.Response = $this.BuildErrorResponse($result.Errors, $context.Audit); return $null }
+                return 'Security'
+            } }
+            Security = @{ Handler = {
+                $sec = $this.Security.ValidatePermissionRequest($context.Params.Mailbox, $context.Params.Users, $context.Audit.initiator)
+                if (-not $sec.IsAuthorized) { $context.Response = $this.BuildSecurityErrorResponse($sec, $context.Audit); return $null }
+                return 'Connect'
+            } }
+            Connect = @{ Handler = {
+                $conn = $this.InitializeExchangeConnection()
+                if (-not $conn.Success) { $context.Response = $this.BuildConnectionErrorResponse($conn, $context.Audit); return $null }
+                return 'Verify'
+            } }
+            Verify = @{ Handler = {
+                $val = $this.ValidateMailbox($context.Params.Mailbox)
+                if (-not $val.IsValid) { $context.Response = $this.BuildMailboxErrorResponse($val, $context.Audit); return $null }
+                return 'Assign'
+            } }
+            Assign = @{ Handler = {
+                $perms = @($context.Params.Permissions ?? @("FullAccess", "SendAs"))
+                foreach ($u in $context.Params.Users) {
+                    $context.Results += $this.ProcessUserPermissions($context.Params.Mailbox, $u, $perms, $context.Params, $sessionId)
+                }
+                return 'Complete'
+            } }
+            Complete = @{ Handler = {
+                $context.Response = $this.BuildSuccessResponse($context.Params.Mailbox, $context.Results, $context.Audit, $stopwatch.ElapsedMilliseconds)
+                $this.Logger.LogInfo("Mailbox permissions session completed", @{ sessionId = $sessionId; mailbox = $context.Params.Mailbox })
+                return $null
+            } }
+        }
+
         try {
-            # Initialize audit trail
-            $auditTrail = @{
-                sessionId = $sessionId
-                timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                initiator = $params.Initiator ?? "MCPAgent"
-                reason = $params.Reason ?? "Automated permission assignment"
-                complianceFlags = @()
-            }
-
-            $this.Logger.LogInfo("Mailbox permissions session started", @{
-                sessionId = $sessionId
-                mailbox = $params.Mailbox
-                users = $params.Users
-                initiator = $auditTrail.initiator
-            })
-
-            # Validate inputs
-            $validationResult = $this.ValidateInputs($params)
-            if ($validationResult.HasErrors) {
-                return $this.BuildErrorResponse($validationResult.Errors, $auditTrail)
-            }
-
-            # Security validation
-            $securityValidation = $this.Security.ValidatePermissionRequest($params.Mailbox, $params.Users, $auditTrail.initiator)
-            if (-not $securityValidation.IsAuthorized) {
-                return $this.BuildSecurityErrorResponse($securityValidation, $auditTrail)
-            }
-
-            # Initialize Exchange connection
-            $connectionResult = $this.InitializeExchangeConnection()
-            if (-not $connectionResult.Success) {
-                return $this.BuildConnectionErrorResponse($connectionResult, $auditTrail)
-            }
-
-            # Verify mailbox exists
-            $mailboxValidation = $this.ValidateMailbox($params.Mailbox)
-            if (-not $mailboxValidation.IsValid) {
-                return $this.BuildMailboxErrorResponse($mailboxValidation, $auditTrail)
-            }
-
-            # Process each user
-            $permissions = @($params.Permissions ?? @("FullAccess", "SendAs"))
-            $results = @()
-            
-            foreach ($user in $params.Users) {
-                $userResult = $this.ProcessUserPermissions($params.Mailbox, $user, $permissions, $params, $sessionId)
-                $results += $userResult
-            }
-
-            # Build comprehensive response
-            $response = $this.BuildSuccessResponse($params.Mailbox, $results, $auditTrail, $stopwatch.ElapsedMilliseconds)
-            
-            $this.Logger.LogInfo("Mailbox permissions session completed", @{
-                sessionId = $sessionId
-                mailbox = $params.Mailbox
-                duration = $stopwatch.ElapsedMilliseconds
-                summary = $response.summary
-            })
-
-            return $response
-
+            $sm = [StateMachine]::new($states, 'Start', $this.Logger)
+            $sm.Run($context)
         } catch {
-            $this.Logger.LogError("Critical error in mailbox permissions", @{
-                sessionId = $sessionId
-                mailbox = $params.Mailbox
-                error = $_.Exception.Message
-                stackTrace = $_.ScriptStackTrace
-            })
-
-            return @{
-                status = "failed"
-                error = "Critical system error during permission assignment"
-                sessionId = $sessionId
-                timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                auditTrail = $auditTrail
-            }
+            $this.Logger.LogError("Critical error in mailbox permissions", @{ sessionId = $sessionId; mailbox = $context.Params.Mailbox; error = $_.Exception.Message })
+            $context.Response = @{ status = 'failed'; error = 'Critical system error during permission assignment'; sessionId = $sessionId; timestamp = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffZ'); auditTrail = $context.Audit }
         } finally {
             $stopwatch.Stop()
         }
+
+        return $context.Response
     }
 
     [hashtable] ValidateInputs([hashtable]$params) {

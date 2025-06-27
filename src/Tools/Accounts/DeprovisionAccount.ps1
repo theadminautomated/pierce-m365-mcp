@@ -122,78 +122,55 @@ class AccountDeprovisioningTool {
     [hashtable] Execute([hashtable]$params) {
         $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         $sessionId = [Guid]::NewGuid().ToString()
-        
+        $context = @{ Params = $params; Accounts = $null; Audit = $null; Results = @(); Response = $null }
+
+        $states = @{
+            Start = @{ Handler = {
+                $context.Audit = @{
+                    sessionId = $sessionId
+                    timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                    initiator = $context.Params.Initiator ?? "MCPAgent"
+                    reason = $context.Params.Reason ?? "Automated deprovisioning"
+                    complianceFlags = @()
+                }
+                $this.Logger.LogInfo("Account deprovisioning session started", @{ sessionId = $sessionId })
+                $context.Accounts = $this.NormalizeAccountList($context.Params)
+                return 'Validate'
+            } }
+            Validate = @{ Handler = {
+                $val = $this.ValidateAccounts($context.Accounts)
+                if ($val.HasCriticalErrors) { $context.Response = $this.BuildErrorResponse($val.Errors, $context.Audit); return $null }
+                return 'Security'
+            } }
+            Security = @{ Handler = {
+                $sec = $this.Security.ValidateDeprovisioningRequest($context.Accounts, $context.Audit.initiator)
+                if (-not $sec.IsAuthorized) { $context.Response = $this.BuildSecurityErrorResponse($sec, $context.Audit); return $null }
+                return 'Connect'
+            } }
+            Connect = @{ Handler = {
+                $conn = $this.InitializeConnections()
+                if (-not $conn.Success) { $context.Response = $this.BuildConnectionErrorResponse($conn, $context.Audit); return $null }
+                return 'Process'
+            } }
+            Process = @{ Handler = {
+                foreach ($acc in $context.Accounts) { $context.Results += $this.ProcessSingleAccount($acc, $context.Params, $sessionId) }
+                $context.Response = $this.BuildSuccessResponse($context.Results, $context.Audit, $stopwatch.ElapsedMilliseconds)
+                $this.Logger.LogInfo("Account deprovisioning session completed", @{ sessionId = $sessionId })
+                return $null
+            } }
+        }
+
         try {
-            # Initialize audit trail
-            $auditTrail = @{
-                sessionId = $sessionId
-                timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                initiator = $params.Initiator ?? "MCPAgent"
-                reason = $params.Reason ?? "Automated deprovisioning"
-                complianceFlags = @()
-            }
-
-            $this.Logger.LogInfo("Account deprovisioning session started", @{
-                sessionId = $sessionId
-                initiator = $auditTrail.initiator
-                reason = $auditTrail.reason
-            })
-
-            # Normalize and validate accounts
-            $accounts = $this.NormalizeAccountList($params)
-            $validationResults = $this.ValidateAccounts($accounts)
-            
-            if ($validationResults.HasCriticalErrors) {
-                return $this.BuildErrorResponse($validationResults.Errors, $auditTrail)
-            }
-
-            # Security validation
-            $securityValidation = $this.Security.ValidateDeprovisioningRequest($accounts, $auditTrail.initiator)
-            if (-not $securityValidation.IsAuthorized) {
-                return $this.BuildSecurityErrorResponse($securityValidation, $auditTrail)
-            }
-
-            # Initialize M365 connections
-            $connectionResult = $this.InitializeConnections()
-            if (-not $connectionResult.Success) {
-                return $this.BuildConnectionErrorResponse($connectionResult, $auditTrail)
-            }
-
-            # Process each account
-            $results = @()
-            foreach ($account in $accounts) {
-                $accountResult = $this.ProcessSingleAccount($account, $params, $sessionId)
-                $results += $accountResult
-            }
-
-            # Build comprehensive response
-            $response = $this.BuildSuccessResponse($results, $auditTrail, $stopwatch.ElapsedMilliseconds)
-            
-            $this.Logger.LogInfo("Account deprovisioning session completed", @{
-                sessionId = $sessionId
-                duration = $stopwatch.ElapsedMilliseconds
-                summary = $response.summary
-            })
-
-            return $response
-
+            $sm = [StateMachine]::new($states, 'Start', $this.Logger)
+            $sm.Run($context)
         } catch {
-            $this.Logger.LogError("Critical error in account deprovisioning", @{
-                sessionId = $sessionId
-                error = $_.Exception.Message
-                stackTrace = $_.ScriptStackTrace
-            })
-
-            return @{
-                status = "failed"
-                error = "Critical system error during deprovisioning"
-                sessionId = $sessionId
-                timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                auditTrail = $auditTrail
-            }
+            $this.Logger.LogError("Critical error in account deprovisioning", @{ sessionId = $sessionId; error = $_.Exception.Message })
+            $context.Response = @{ status = 'failed'; error = 'Critical system error during deprovisioning'; sessionId = $sessionId; timestamp = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffZ'); auditTrail = $context.Audit }
         } finally {
             $stopwatch.Stop()
         }
+
+        return $context.Response
     }
 
     [array] NormalizeAccountList([hashtable]$params) {

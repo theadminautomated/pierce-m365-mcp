@@ -24,6 +24,7 @@ class OrchestrationEngine {
     hidden [ConcurrentDictionary[string, object]] $ActiveSessions
     hidden [Logger] $Logger
     hidden [EntityExtractor] $EntityExtractor
+    hidden [RuleBasedParser] $RuleParser
     hidden [ValidationEngine] $ValidationEngine
     hidden [SecurityManager] $SecurityManager
     hidden [ToolRegistry] $ToolRegistry
@@ -38,6 +39,7 @@ class OrchestrationEngine {
         $this.ActiveSessions = [ConcurrentDictionary[string, object]]::new()
         $this.Logger = $logger
         $this.EntityExtractor = [EntityExtractor]::new($logger)
+        $this.RuleParser = [RuleBasedParser]::new($logger)
         $this.ValidationEngine = [ValidationEngine]::new($logger)
         $this.SecurityManager = [SecurityManager]::new($logger)
         $this.ToolRegistry = [ToolRegistry]::new($logger)
@@ -103,6 +105,13 @@ class OrchestrationEngine {
             $session.AddContext('EntityExtractionConfidence', $metrics)
             if (-not $metrics.IsHighConfidence) {
                 $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='EntityExtraction'; Metrics=$metrics }, $session) | Out-Null
+                $fallback = $this.RuleParser.Parse($request.Input)
+                if ($fallback.Users.Count -gt 0 -or $fallback.Mailboxes.Count -gt 0 -or $fallback.Groups.Count -gt 0) {
+                    $session.AddContext('RuleBasedFallback', $true)
+                    foreach ($u in $fallback.Users) { $extractedEntities.AddUsers([UserEntity]::new($u)) }
+                    foreach ($m in $fallback.Mailboxes) { $extractedEntities.AddMailboxes([MailboxEntity]::new($m, [MailboxType]::Shared)) }
+                    foreach ($g in $fallback.Groups) { $extractedEntities.AddGroups([GroupEntity]::new($g)) }
+                }
             }
             
             # Validate entities against Pierce County standards
