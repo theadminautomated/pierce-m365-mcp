@@ -300,6 +300,13 @@ class ValidationEngine {
                     $validation.AddWarning("Mailbox owner not found in context: $($mailbox.Owner)")
                 }
             }
+
+            if ($mailbox.MailboxType -eq [MailboxType]::User) {
+                $ea1 = $this.GetUserExtensionAttribute($session.Initiator, 'extensionAttribute1')
+                if ($ea1 -ne '119') {
+                    $validation.AddError('User-to-user mailbox assignment requires ExtensionAttribute1 = 119')
+                }
+            }
         }
         
         # Validate group membership consistency
@@ -536,6 +543,20 @@ class ValidationEngine {
     hidden [bool] RequiresSecurityClearance([string]$title) {
         $clearanceRequiredTitles = $this.OrganizationalPolicies['SecurityClearanceRequired']
         return $clearanceRequiredTitles | Where-Object { $title -match $_ }
+    }
+
+    hidden [string] GetUserExtensionAttribute([string]$user, [string]$attribute) {
+        try {
+            $adUser = Get-ADUser -Identity $user -Properties $attribute -ErrorAction Stop
+            return $adUser.$attribute
+        } catch {
+            try {
+                $mgUser = Get-MgUser -UserId $user -Property $attribute -ErrorAction Stop
+                return $mgUser.AdditionalProperties[$attribute]
+            } catch {
+                return $null
+            }
+        }
     }
 }
 

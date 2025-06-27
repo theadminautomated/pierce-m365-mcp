@@ -366,23 +366,33 @@ class EntityExtractor {
     hidden [void] InitializeSynonyms() {
         # TODO: Make synonym list MUCH more robust and comprehensive
         $this.Synonyms = [Dictionary[string, string[]]]::new()
-        $this.Synonyms['Access'] = @('permission', 'rights', 'privileges', 'access')
-        $this.Synonyms['Remove'] = @('delete', 'revoke', 'take away', 'remove', 'disable')
-        $this.Synonyms['Add'] = @('grant', 'give', 'assign', 'add', 'provide')
-        $this.Synonyms['User'] = @('user', 'person', 'employee', 'staff', 'individual')
-        $this.Synonyms['Group'] = @('group', 'team', 'distribution list', 'security group')
-        $this.Synonyms['Mailbox'] = @('mailbox', 'email', 'inbox', 'mail')
+        $this.Synonyms['Access']   = @('permission', 'rights', 'privileges', 'access')
+        $this.Synonyms['Remove']   = @('delete', 'revoke', 'take away', 'remove', 'disable')
+        $this.Synonyms['Add']      = @('grant', 'give', 'assign', 'add', 'provide')
+        $this.Synonyms['User']     = @('user', 'person', 'employee', 'staff', 'individual')
+        $this.Synonyms['Group']    = @('group', 'team', 'distribution list', 'security group')
+        $this.Synonyms['Mailbox']  = @('mailbox', 'email', 'inbox', 'mail')
+
+        # Expanded synonym coverage
+        $this.Synonyms['Admin']     = @('admin', 'administrator', 'sysadmin', 'it staff')
+        $this.Synonyms['Delegate']  = @('delegate', 'proxy', 'acting', 'on behalf')
+        $this.Synonyms['Calendar']  = @('calendar', 'schedule', 'agenda')
     }
     
     hidden [void] InitializeCorrections() {
         # TODO: Make corrections list MUCH more robust and comprehensive
         $this.Corrections = [Dictionary[string,string]]::new()
         $this.Corrections['\bpierce\s*county\b'] = 'Pierce County'
-        $this.Corrections['\bm365\b'] = 'Microsoft 365'
-        $this.Corrections['\bexchange\b'] = 'Exchange Online'
-        $this.Corrections['\bad\b'] = 'Active Directory'
-        $this.Corrections['\bshare\s*point\b'] = 'SharePoint'
-        $this.Corrections['\bteams\b'] = 'Microsoft Teams'
+        $this.Corrections['\bm365\b']           = 'Microsoft 365'
+        $this.Corrections['\bexchange\b']       = 'Exchange Online'
+        $this.Corrections['\bad\b']             = 'Active Directory'
+        $this.Corrections['\bshare\s*point\b']  = 'SharePoint'
+        $this.Corrections['\bteams\b']          = 'Microsoft Teams'
+
+        # Common misspellings
+        $this.Corrections['\bpirece\b']         = 'Pierce'
+        $this.Corrections['\brecieve\b']        = 'receive'
+        $this.Corrections['\badmn\b']           = 'admin'
     }
     
     hidden [void] LoadOrganizationalContext() {

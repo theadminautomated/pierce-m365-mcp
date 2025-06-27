@@ -52,6 +52,8 @@ src/
 - **Self-Correction**: Automatic error detection, analysis, and remediation
 - **Fuzzy Entity Correction**: Misspelled users and mailboxes are automatically
   corrected using context-driven fuzzy matching
+- **Expanded Dictionaries**: The Entity Extractor now covers additional synonyms
+  and common misspellings for better intent parsing
 - **Internal Reasoning Engine**: Aggregates context to resolve ambiguity and errors automatically
 - **Autonomous Execution**: All tools run without confirmation prompts; the reasoning engine handles corrections silently
 - **Rule-Based Fallback Parsing**: Regex and dictionary extraction when AI confidence is low
@@ -161,6 +163,8 @@ $search = $server.OrchestrationEngine.WebSearchEngine.Search('m365 mailbox deleg
 - **Comprehensive Audit Trails**: Full operation logging for compliance
 - **Threat Detection**: Real-time security monitoring and alerting
 - **Data Protection**: Sensitive information masking and secure storage
+- **Mailbox Assignment Policy**: User-to-user mailbox permissions require
+  ExtensionAttribute1 set to 119 for the requestor
 
 ### GCC Compliance
 - **FISMA Moderate**: Federal security controls implementation
