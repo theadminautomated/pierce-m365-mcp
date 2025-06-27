@@ -695,7 +695,7 @@ class PerformanceCounter {
         [System.Threading.Monitor]::Enter($this.Lock)
         try {
             if ($this.CurrentStart -eq [DateTime]::MinValue) {
-                return
+                return [TimeSpan]::Zero
             }
             
             $duration = (Get-Date) - $this.CurrentStart
