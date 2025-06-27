@@ -25,6 +25,7 @@ src/
 │   ├── ValidationEngine.ps1        # Compliance & security validation
 │   ├── ToolRegistry.ps1           # Dynamic tool discovery & execution
 │   ├── Logger.ps1                 # Enterprise audit logging
+│   ├── OrchestrationTypes.ps1     # Shared orchestration classes & enums
 │   ├── SecurityManager.ps1        # Security enforcement & threat detection
 │   ├── ContextManager.ps1         # Persistent context & relationship tracking
 │   ├── VectorMemoryBank.ps1       # Advanced vector-based memory system
@@ -185,7 +186,9 @@ $search = $server.OrchestrationEngine.WebSearchEngine.Search('m365 mailbox deleg
 4. Install Python dependencies with `pip install -r requirements.txt`
 5. Begin issuing natural language automation requests
 6. For a very simple overview, read `docs/HOW-TO-USE.md`
-7. Validate the installation by running `./scripts/test-core-modules.ps1`
+7. Validate the installation by running `./scripts/test-core-modules.ps1`. This
+   script loads core modules in dependency order starting with `Logger.ps1` and
+   the new `OrchestrationTypes.ps1` definitions.
 
 ### Configurable AI Model Providers
 AI providers are defined in `mcp.config.json`. Each provider entry includes an endpoint, model name, authentication, and timeout. Example:

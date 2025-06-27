@@ -126,4 +126,3 @@ class InternalReasoningEngine {
     }
 }
 
-Export-ModuleMember -Class InternalReasoningEngine, ReasoningResult

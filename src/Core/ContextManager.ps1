@@ -410,9 +410,9 @@ class ContextManager {
     
     hidden [void] EnrichUserWithContext([UserEntity]$user) {
         # Get related entities from relationship graph
-        $relationships = $this.RelationshipGraph.GetRelationships($user.Email)
-        
-        foreach ($relationship in $relationships) {
+        $relList = $this.RelationshipGraph.GetRelationships($user.Email)
+
+        foreach ($relationship in $relList) {
             switch ($relationship.Type) {
                 "MemberOf" {
                     if (-not $user.Department) {
@@ -435,9 +435,9 @@ class ContextManager {
     
     hidden [void] EnrichMailboxWithContext([MailboxEntity]$mailbox) {
         # Get ownership information
-        $relationships = $this.RelationshipGraph.GetRelationships($mailbox.Email)
-        
-        foreach ($relationship in $relationships) {
+        $relList = $this.RelationshipGraph.GetRelationships($mailbox.Email)
+
+        foreach ($relationship in $relList) {
             if ($relationship.Type -eq "OwnedBy") {
                 $mailbox.Owner = $relationship.TargetId
                 break
@@ -452,12 +452,12 @@ class ContextManager {
     
     hidden [void] EnrichGroupWithContext([GroupEntity]$group) {
         # Get membership information
-        $relationships = $this.RelationshipGraph.GetRelationships($group.Name)
+        $relList = $this.RelationshipGraph.GetRelationships($group.Name)
         
         $members = @()
         $owners = @()
         
-        foreach ($relationship in $relationships) {
+        foreach ($relationship in $relList) {
             switch ($relationship.Type) {
                 "HasMember" { $members += $relationship.TargetId }
                 "OwnedBy" { $owners += $relationship.TargetId }
@@ -533,33 +533,27 @@ class ContextManager {
     }
     
     hidden [ContextualSuggestion] CreateSuggestionFromPattern([MemoryPattern]$pattern, [EntityCollection]$entities) {
+        $result = $null
         switch ($pattern.Type) {
             "FrequentUserOperation" {
-                return [ContextualSuggestion]::new(
+                $result = [ContextualSuggestion]::new(
                     "Consider automating this frequent operation",
                     "UserAutomation",
                     $pattern.Confidence,
-                    @{
-                        Pattern = $pattern.Description
-                        Frequency = $pattern.Frequency
-                    }
+                    @{ Pattern = $pattern.Description; Frequency = $pattern.Frequency }
                 )
             }
             "PermissionAnomaly" {
-                return [ContextualSuggestion]::new(
+                $result = [ContextualSuggestion]::new(
                     "Unusual permission pattern detected - review required",
                     "SecurityReview",
                     $pattern.Confidence,
-                    @{
-                        Pattern = $pattern.Description
-                        Risk = $pattern.Risk
-                    }
+                    @{ Pattern = $pattern.Description; Risk = $pattern.Risk }
                 )
             }
-            default {
-                return $null
-            }
+            default { }
         }
+        return $result
     }
     
     hidden [List[ContextualSuggestion]] GetRelationshipSuggestions([EntityCollection]$entities) {
@@ -677,14 +671,14 @@ class RelationshipGraph {
     [void] AddRelationship([string]$sourceId, [string]$targetId, [string]$type) {
         $relationship = [GraphRelationship]::new($sourceId, $targetId, $type)
         
-        $relationships = $this.Relationships.GetOrAdd($sourceId, { [List[GraphRelationship]]::new() })
-        $relationships.Add($relationship)
+        $relList = $this.Relationships.GetOrAdd($sourceId, { [List[GraphRelationship]]::new() })
+        $relList.Add($relationship)
     }
     
     [GraphRelationship[]] GetRelationships([string]$entityId) {
-        $relationships = $null
-        if ($this.Relationships.TryGetValue($entityId, [ref]$relationships)) {
-            return $relationships.ToArray()
+        $relList = $null
+        if ($this.Relationships.TryGetValue($entityId, [ref]$relList)) {
+            return $relList.ToArray()
         }
         return @()
     }
@@ -704,8 +698,8 @@ class RelationshipGraph {
                 continue
             }
             
-            $relationships = $this.GetRelationships($current.EntityId)
-            foreach ($relationship in $relationships) {
+            $relList = $this.GetRelationships($current.EntityId)
+            foreach ($relationship in $relList) {
                 if (-not $visited.Contains($relationship.TargetId)) {
                     $visited.Add($relationship.TargetId)
                     $related.Add($relationship.TargetId)
@@ -759,36 +753,25 @@ class RelationshipGraph {
     
     [void] SaveToFile([string]$filePath) {
         try {
-            $entities = @($this.Entities.Values | ForEach-Object {
-                @{
-                    id = $_.Id
-                    type = $_.Type
-                    properties = $_.Properties
-                }
+            $entityData = @($this.Entities.Values | ForEach-Object {
+                @{ id = $_.Id; type = $_.Type; properties = $_.Properties }
             })
-            
-            $relationships = @()
+
+            $relationData = @()
             foreach ($entityRelationships in $this.Relationships.GetEnumerator()) {
                 foreach ($relationship in $entityRelationships.Value) {
-                    $relationships += @{
-                        sourceId = $relationship.SourceId
-                        targetId = $relationship.TargetId
-                        type = $relationship.Type
-                    }
+                    $relationData += @{ sourceId = $relationship.SourceId; targetId = $relationship.TargetId; type = $relationship.Type }
                 }
             }
-            
-            $graphData = @{
-                entities = $entities
-                relationships = $relationships
-            }
+
+            $graphData = @{ entities = $entityData; relationships = $relationData }
             
             $graphData | ConvertTo-Json -Depth 5 | Set-Content $filePath
             
             $this.Logger.Debug("Relationship graph saved to file", @{
                 FilePath = $filePath
-                EntityCount = $entities.Count
-                RelationshipCount = $relationships.Count
+                EntityCount = $entityData.Count
+                RelationshipCount = $relationData.Count
             })
         }
         catch {
@@ -887,7 +870,7 @@ class RetryStrategy {
         $this.DelayMs = $delayMs
     }
     
-    [SelfHealingResult] Attempt([ToolStep]$toolStep, [Exception]$error, [OrchestrationSession]$session, [OrchestrationEngine]$engine) {
+    [SelfHealingResult] Attempt([ToolStep]$toolStep, [Exception]$error, [OrchestrationSession]$session, [object]$engine) {
         for ($i = 1; $i -le $this.MaxRetries; $i++) {
             Start-Sleep -Milliseconds $this.DelayMs
             
@@ -911,7 +894,7 @@ class RetryStrategy {
 }
 
 class FallbackStrategy {
-    [SelfHealingResult] Attempt([ToolStep]$toolStep, [Exception]$error, [OrchestrationSession]$session, [OrchestrationEngine]$engine) {
+    [SelfHealingResult] Attempt([ToolStep]$toolStep, [Exception]$error, [OrchestrationSession]$session, [object]$engine) {
         # Attempt to find a fallback tool
         $fallbackTool = $this.FindFallbackTool($toolStep.ToolName, $engine)
         
@@ -931,7 +914,7 @@ class FallbackStrategy {
         return [SelfHealingResult]::Failure("No suitable fallback tool found")
     }
     
-    hidden [string] FindFallbackTool([string]$originalTool, [OrchestrationEngine]$engine) {
+    hidden [string] FindFallbackTool([string]$originalTool, [object]$engine) {
         # Simple fallback mapping
         $fallbackMap = @{
             'add_mailbox_permissions' = 'grant_permissions'
@@ -944,7 +927,7 @@ class FallbackStrategy {
 }
 
 class ContextAdjustmentStrategy {
-    [SelfHealingResult] Attempt([ToolStep]$toolStep, [Exception]$error, [OrchestrationSession]$session, [OrchestrationEngine]$engine) {
+    [SelfHealingResult] Attempt([ToolStep]$toolStep, [Exception]$error, [OrchestrationSession]$session, [object]$engine) {
         # Attempt to adjust parameters based on the error
         $adjustedParameters = $this.AdjustParameters($toolStep.Parameters, $error)
         
@@ -991,7 +974,7 @@ class ContextAdjustmentStrategy {
 }
 
 class ToolSubstitutionStrategy {
-    [SelfHealingResult] Attempt([ToolStep]$toolStep, [Exception]$error, [OrchestrationSession]$session, [OrchestrationEngine]$engine) {
+    [SelfHealingResult] Attempt([ToolStep]$toolStep, [Exception]$error, [OrchestrationSession]$session, [object]$engine) {
         # Find an alternative tool that can achieve the same result
         $alternativeTool = $this.FindAlternativeTool($toolStep.ToolName, $engine)
         
@@ -1013,7 +996,7 @@ class ToolSubstitutionStrategy {
         return [SelfHealingResult]::Failure("No suitable alternative tool found")
     }
     
-    hidden [string] FindAlternativeTool([string]$originalTool, [OrchestrationEngine]$engine) {
+    hidden [string] FindAlternativeTool([string]$originalTool, [object]$engine) {
         # Map tools to alternatives
         $alternativeMap = @{
             'set_calendar_permissions' = 'add_mailbox_permissions'
@@ -1042,4 +1025,3 @@ class ToolSubstitutionStrategy {
     }
 }
 
-Export-ModuleMember -Cmdlet * -Function * -Variable * -Alias *

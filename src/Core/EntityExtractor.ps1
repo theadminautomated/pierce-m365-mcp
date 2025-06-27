@@ -262,13 +262,13 @@ class EntityExtractor {
         $knownDepartments = $this.OrganizationalContext['Departments']
         
         foreach ($dept in $knownDepartments) {
-            $patterns = @(
+            $deptPatterns = @(
                 $dept.Name,
                 $dept.ShortName,
                 $dept.Aliases
             ) | Where-Object { $_ }
             
-            foreach ($pattern in $patterns) {
+            foreach ($pattern in $deptPatterns) {
                 if ($input -match "(?i)\b$([Regex]::Escape($pattern))\b") {
                     $department = [DepartmentEntity]::new($dept.Name)
                     $department.ShortName = $dept.ShortName
@@ -353,51 +353,47 @@ class EntityExtractor {
     }
     
     hidden [void] InitializePatterns() {
-        $this.Patterns = @{
-            'Email' = [Regex]::new('[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', 'IgnoreCase')
-            'SharedMailbox' = [Regex]::new('[a-z0-9_-]+@piercecountywa\.gov', 'IgnoreCase')
-            'ResourceMailbox' = [Regex]::new('[a-z0-9_-]+(room|cal|equipment|resource)[a-z0-9_-]*@piercecountywa\.gov', 'IgnoreCase')
-            'FullName' = [Regex]::new('\b[A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)*\b')
-            'Username' = [Regex]::new('\b[a-z]+\.[a-z]+\b')
-            'PhoneNumber' = [Regex]::new('\b\d{3}[-.]?\d{3}[-.]?\d{4}\b')
-            'Department' = [Regex]::new('\b(department|division|office|bureau|unit)\s+of\s+[A-Za-z\s]+', 'IgnoreCase')
-        }
+        $this.Patterns = [Dictionary[string, Regex]]::new()
+        $this.Patterns['Email'] = [Regex]::new('[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', 'IgnoreCase')
+        $this.Patterns['SharedMailbox'] = [Regex]::new('[a-z0-9_-]+@piercecountywa\.gov', 'IgnoreCase')
+        $this.Patterns['ResourceMailbox'] = [Regex]::new('[a-z0-9_-]+(room|cal|equipment|resource)[a-z0-9_-]*@piercecountywa\.gov', 'IgnoreCase')
+        $this.Patterns['FullName'] = [Regex]::new('\b[A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)*\b')
+        $this.Patterns['Username'] = [Regex]::new('\b[a-z]+\.[a-z]+\b')
+        $this.Patterns['PhoneNumber'] = [Regex]::new('\b\d{3}[-.]?\d{3}[-.]?\d{4}\b')
+        $this.Patterns['Department'] = [Regex]::new('\b(department|division|office|bureau|unit)\s+of\s+[A-Za-z\s]+', 'IgnoreCase')
     }
     
     hidden [void] InitializeSynonyms() {
         # TODO: Make synonym list MUCH more robust and comprehensive
-        $this.Synonyms = @{
-            'Access' = @('permission', 'rights', 'privileges', 'access')
-            'Remove' = @('delete', 'revoke', 'take away', 'remove', 'disable')
-            'Add' = @('grant', 'give', 'assign', 'add', 'provide')
-            'User' = @('user', 'person', 'employee', 'staff', 'individual')
-            'Group' = @('group', 'team', 'distribution list', 'security group')
-            'Mailbox' = @('mailbox', 'email', 'inbox', 'mail')
-        }
+        $this.Synonyms = [Dictionary[string, string[]]]::new()
+        $this.Synonyms['Access'] = @('permission', 'rights', 'privileges', 'access')
+        $this.Synonyms['Remove'] = @('delete', 'revoke', 'take away', 'remove', 'disable')
+        $this.Synonyms['Add'] = @('grant', 'give', 'assign', 'add', 'provide')
+        $this.Synonyms['User'] = @('user', 'person', 'employee', 'staff', 'individual')
+        $this.Synonyms['Group'] = @('group', 'team', 'distribution list', 'security group')
+        $this.Synonyms['Mailbox'] = @('mailbox', 'email', 'inbox', 'mail')
     }
     
     hidden [void] InitializeCorrections() {
         # TODO: Make corrections list MUCH more robust and comprehensive
-        $this.Corrections = @{
-            '\bpierce\s*county\b' = 'Pierce County'
-            '\bm365\b' = 'Microsoft 365'
-            '\bexchange\b' = 'Exchange Online'
-            '\bad\b' = 'Active Directory'
-            '\bshare\s*point\b' = 'SharePoint'
-            '\bteams\b' = 'Microsoft Teams'
-        }
+        $this.Corrections = [Dictionary[string,string]]::new()
+        $this.Corrections['\bpierce\s*county\b'] = 'Pierce County'
+        $this.Corrections['\bm365\b'] = 'Microsoft 365'
+        $this.Corrections['\bexchange\b'] = 'Exchange Online'
+        $this.Corrections['\bad\b'] = 'Active Directory'
+        $this.Corrections['\bshare\s*point\b'] = 'SharePoint'
+        $this.Corrections['\bteams\b'] = 'Microsoft Teams'
     }
     
     hidden [void] LoadOrganizationalContext() {
         # This would typically load from a configuration file or database
-        $this.OrganizationalContext = @{
-            'Departments' = @(
-                @{ Name = 'Information Technology'; ShortName = 'IT'; Id = 'IT001'; Aliases = @('IT', 'Technology') },
-                @{ Name = 'Human Resources'; ShortName = 'HR'; Id = 'HR001'; Aliases = @('HR', 'Personnel') },
-                @{ Name = 'Finance'; ShortName = 'FIN'; Id = 'FIN001'; Aliases = @('Finance', 'Accounting') },
-                @{ Name = 'Public Works'; ShortName = 'PW'; Id = 'PW001'; Aliases = @('Public Works', 'Engineering') }
-            )
-        }
+        $this.OrganizationalContext = [Dictionary[string, object]]::new()
+        $departments = [List[object]]::new()
+        $departments.Add(@{ Name = 'Information Technology'; ShortName = 'IT'; Id = 'IT001'; Aliases = @('IT', 'Technology') })
+        $departments.Add(@{ Name = 'Human Resources'; ShortName = 'HR'; Id = 'HR001'; Aliases = @('HR', 'Personnel') })
+        $departments.Add(@{ Name = 'Finance'; ShortName = 'FIN'; Id = 'FIN001'; Aliases = @('Finance', 'Accounting') })
+        $departments.Add(@{ Name = 'Public Works'; ShortName = 'PW'; Id = 'PW001'; Aliases = @('Public Works', 'Engineering') })
+        $this.OrganizationalContext['Departments'] = $departments
     }
     
     hidden [bool] IsValidPierceCountyEmail([string]$email) {
@@ -684,4 +680,3 @@ class TimeEntity : BaseEntity {
     }
 }
 
-Export-ModuleMember -Cmdlet * -Function * -Variable * -Alias *

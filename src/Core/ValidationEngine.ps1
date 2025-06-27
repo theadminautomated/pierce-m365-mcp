@@ -482,28 +482,26 @@ class ValidationEngine {
     }
     
     hidden [void] LoadOrganizationalPolicies() {
-        $this.OrganizationalPolicies = @{
-            'MaxGroupSize' = 200
-            'RequireApprovalThreshold' = 50
-            'SharedMailboxOwnerRequired' = $true
-            'ExternalDomainAllowed' = $false
-            'AutoProvisioningEnabled' = $false
-            'DefaultRetentionPeriod' = '7 years'
-            'SecurityClearanceRequired' = @('Administrator', 'Security Officer', 'Compliance Manager')
-            'PrivilegedRoles' = @('Global Administrator', 'Exchange Administrator', 'Security Administrator')
-        }
+        $this.OrganizationalPolicies = [Dictionary[string, object]]::new()
+        $this.OrganizationalPolicies['MaxGroupSize'] = 200
+        $this.OrganizationalPolicies['RequireApprovalThreshold'] = 50
+        $this.OrganizationalPolicies['SharedMailboxOwnerRequired'] = $true
+        $this.OrganizationalPolicies['ExternalDomainAllowed'] = $false
+        $this.OrganizationalPolicies['AutoProvisioningEnabled'] = $false
+        $this.OrganizationalPolicies['DefaultRetentionPeriod'] = '7 years'
+        $this.OrganizationalPolicies['SecurityClearanceRequired'] = @('Administrator','Security Officer','Compliance Manager')
+        $this.OrganizationalPolicies['PrivilegedRoles'] = @('Global Administrator','Exchange Administrator','Security Administrator')
     }
     
     hidden [void] LoadComplianceRequirements() {
-        $this.ComplianceRequirements = @{
-            'DataResidency' = 'United States'
-            'EncryptionRequired' = $true
-            'AuditRetention' = '7 years'
-            'SecurityClassification' = 'FOUO'
-            'ComplianceFrameworks' = @('SOC2', 'NIST', 'FISMA')
-            'DataSubjectRights' = $true
-            'BreachNotificationPeriod' = '72 hours'
-        }
+        $this.ComplianceRequirements = [Dictionary[string, object]]::new()
+        $this.ComplianceRequirements['DataResidency'] = 'United States'
+        $this.ComplianceRequirements['EncryptionRequired'] = $true
+        $this.ComplianceRequirements['AuditRetention'] = '7 years'
+        $this.ComplianceRequirements['SecurityClassification'] = 'FOUO'
+        $this.ComplianceRequirements['ComplianceFrameworks'] = @('SOC2','NIST','FISMA')
+        $this.ComplianceRequirements['DataSubjectRights'] = $true
+        $this.ComplianceRequirements['BreachNotificationPeriod'] = '72 hours'
     }
     
     hidden [bool] IsValidDepartment([string]$department) {

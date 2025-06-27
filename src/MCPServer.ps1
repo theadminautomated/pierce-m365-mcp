@@ -29,6 +29,7 @@ $ProgressPreference = 'SilentlyContinue'
 $moduleRoot = Split-Path -Parent $PSCommandPath
 $coreModules = @(
     'Logger.ps1',               # Base logging infrastructure
+    'OrchestrationTypes.ps1',   # Shared orchestration classes
     'SemanticIndex.ps1',        # Semantic indexing classes (needed by VectorMemoryBank)
     'VectorMemoryBank.ps1',     # Vector memory system
     'ValidationEngine.ps1',     # Validation infrastructure

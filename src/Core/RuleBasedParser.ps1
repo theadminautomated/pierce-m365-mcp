@@ -44,4 +44,3 @@ class RuleBasedParser {
     }
 }
 
-Export-ModuleMember -Cmdlet * -Function * -Variable * -Alias *

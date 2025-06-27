@@ -33,4 +33,3 @@ class StateMachine {
     }
 }
 
-Export-ModuleMember -Cmdlet * -Function * -Variable * -Alias *

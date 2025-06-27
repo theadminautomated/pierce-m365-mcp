@@ -117,6 +117,12 @@ class SecurityManager {
     
     [void] LoadSecurityPolicies() {
         $this.Logger.Debug("Loading security policies")
+
+        if (-not $this.Policies) {
+            $this.Policies = [Dictionary[string, SecurityPolicy]]::new()
+        } else {
+            $this.Policies.Clear()
+        }
         
         # Load Pierce County specific security policies
         # UserProvisioning policy
