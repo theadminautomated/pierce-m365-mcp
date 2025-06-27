@@ -61,15 +61,33 @@ class InternalReasoningEngine:
         return None
 
     def _extract_identifier(self, text: str) -> str:
-        """Extract probable identifier (email or word) from validation text."""
-        match = re.search(r"[\w.-]+@[\w.-]+", text)
+        """Extract a likely identifier such as an email or token from text."""
+        email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
+        match = re.search(email_pattern, text)
         if match:
             return match.group(0)
+
         tokens = re.findall(r"[A-Za-z0-9._-]+", text)
         for tok in tokens:
-            if "." in tok or "_" in tok:
+            if (
+                len(tok) >= 3
+                and not tok.isdigit()
+                and ("." in tok or "_" in tok)
+                and re.search(r"[A-Za-z]", tok)
+            ):
                 return tok
         return tokens[-1] if tokens else text
+
+    def collect_environment_context(self) -> Dict[str, Any]:
+        """Return minimal environment context for diagnostics."""
+        try:
+            return {
+                "cwd": os.getcwd(),
+                "user": os.environ.get("USER", "unknown"),
+                "hostname": os.uname().nodename,
+            }
+        except Exception:  # pragma: no cover - environment may not expose uname
+            return {"cwd": os.getcwd()}
 
     def aggregate_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Aggregate known context into a normalized dictionary.
@@ -110,6 +128,23 @@ class InternalReasoningEngine:
             return "PermissionDenied"
         if "rate" in msg.lower() and "limit" in msg.lower():
             return "RateLimit"
+
+    def _suggest_next_steps(self, cause: Optional[str]) -> Tuple[bool, List[str]]:
+        """Return suggested remediation actions based on root cause."""
+        actions: List[str] = []
+        if cause == "Timeout":
+            actions.append("Retry operation with backoff")
+            return True, actions
+        if cause == "NetworkError":
+            actions.append("Check network connectivity and retry")
+            return True, actions
+        if cause == "PermissionDenied":
+            actions.append("Verify permissions or escalate")
+        elif cause == "RateLimit":
+            actions.append("Wait before retrying to respect rate limits")
+        else:
+            actions.append("Escalate to human operator")
+        return False, actions
 
     def _dispatch(self, issue: Dict[str, Any], context: Dict[str, Any]) -> ReasoningResult:
         """Route issue types to the correct handler."""
