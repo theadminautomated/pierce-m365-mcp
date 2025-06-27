@@ -153,7 +153,6 @@ class MCPServer {
     
     hidden [hashtable] HandleRequest([hashtable]$request) {
         $this.PerformanceMonitor.StartOperation("MessageProcessing")
-         = 
         
         try {
             # Log incoming request (sanitized)
