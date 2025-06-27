@@ -356,7 +356,7 @@ class ContextManager {
             })
         }
         catch {
-            $this.Logger.Warning("Failed to load persisted context", @{
+            $this.Logger.Warning("Failed to load persisted context", @{ Error = $_.Exception.Message })
         }
     }
     

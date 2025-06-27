@@ -42,6 +42,7 @@ $coreModules = @(
     'InternalReasoningEngine.ps1', # Automated reasoning and correction
     'RuleBasedParser.ps1',     # Fallback regex/dictionary parser
     'EntityExtractor.ps1',      # Entity extraction
+    'AIManager.ps1',            # Configurable AI provider management
     'WebSearchEngine.ps1',     # Contextual web search
     'OrchestrationEngine.ps1',  # Main orchestration engine
     'AsyncRequestProcessor.ps1' # Parallel request processing
@@ -111,7 +112,11 @@ function Initialize-Configuration {
         ServerVersion = "2.1.0-rc"
     }
     
-    # Load configuration file if specified
+    # Load configuration file if specified, otherwise try repo config
+    if (-not $ConfigPath) {
+        $repoConfig = Join-Path $moduleRoot '..' 'mcp.config.json'
+        if (Test-Path $repoConfig) { $ConfigPath = $repoConfig }
+    }
     if ($ConfigPath -and (Test-Path $ConfigPath)) {
         try {
             $fileConfig = Get-Content $ConfigPath | ConvertFrom-Json -AsHashtable

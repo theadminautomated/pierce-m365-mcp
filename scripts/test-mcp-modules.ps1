@@ -24,16 +24,17 @@ try {
     # Test each core module individually
     $coreModules = @(
         'Logger.ps1',
-        'VectorMemoryBank.ps1',
         'SemanticIndex.ps1',
-        'OrchestrationEngine.ps1',
+        'VectorMemoryBank.ps1',
         'EntityExtractor.ps1',
+        'ContextManager.ps1',
+        'AIManager.ps1',
+        'OrchestrationEngine.ps1',
         'ValidationEngine.ps1',
         'ToolRegistry.ps1',
         'SecurityManager.ps1',
         'ConfidenceEngine.ps1',
-        'InternalReasoningEngine.ps1',
-        'ContextManager.ps1'
+        'InternalReasoningEngine.ps1'
     )
     
     foreach ($module in $coreModules) {

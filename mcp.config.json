@@ -1,0 +1,12 @@
+{
+  "DefaultAIProvider": "OllamaLocal",
+  "AIProviders": [
+    {
+      "Name": "OllamaLocal",
+      "Type": "REST",
+      "Endpoint": "http://localhost:11434/api/generate",
+      "Model": "llama2",
+      "TimeoutSec": 30
+    }
+  ]
+}

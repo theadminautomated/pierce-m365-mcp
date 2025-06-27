@@ -183,6 +183,26 @@ $search = $server.OrchestrationEngine.WebSearchEngine.Search('m365 mailbox deleg
 6. For a very simple overview, read `docs/HOW-TO-USE.md`
 7. Validate the installation by running `./scripts/test-core-modules.ps1`
 
+### Configurable AI Model Providers
+AI providers are defined in `mcp.config.json`. Each provider entry includes an endpoint, model name, authentication, and timeout. Example:
+
+```json
+{
+  "DefaultAIProvider": "OllamaLocal",
+  "AIProviders": [
+    {
+      "Name": "OllamaLocal",
+      "Type": "REST",
+      "Endpoint": "http://localhost:11434/api/generate",
+      "Model": "llama2",
+      "TimeoutSec": 30
+    }
+  ]
+}
+```
+
+Swap providers or add new ones by editing this file and restarting the server. No code changes are required.
+
 ### Autostart Service
 Use `scripts/install-autostart.ps1` to register the watchdog service that keeps
 the MCP server running. The script detects Windows or Linux and installs either
