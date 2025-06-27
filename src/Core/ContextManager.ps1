@@ -22,7 +22,8 @@ class ContextManager {
     ContextManager([Logger]$logger) {
         $this.Logger = $logger
         $this.ContextStores = [ConcurrentDictionary[string, ContextStore]]::new()
-        $this.PersistencePath = Join-Path $env:TEMP "PierceCountyMCP\Context"
+        $temp = if ($env:TEMP) { $env:TEMP } else { '/tmp' }
+        $this.PersistencePath = Join-Path $temp "PierceCountyMCP/Context"
         $this.VectorMemoryBank = [VectorMemoryBank]::new($logger, (Join-Path $this.PersistencePath "VectorMemory"))
         $this.RelationshipGraph = [RelationshipGraph]::new($logger)
         

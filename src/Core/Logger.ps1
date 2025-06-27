@@ -140,7 +140,8 @@ class Logger {
         $this.AddTarget($consoleTarget)
         
         # File target for all logs
-        $logDir = Join-Path $env:TEMP "PierceCountyMCP\Logs"
+        $temp = if ($env:TEMP) { $env:TEMP } else { '/tmp' }
+        $logDir = Join-Path $temp "PierceCountyMCP/Logs"
         if (-not (Test-Path $logDir)) {
             New-Item -Path $logDir -ItemType Directory -Force | Out-Null
         }
