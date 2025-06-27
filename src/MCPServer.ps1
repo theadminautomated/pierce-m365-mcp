@@ -86,10 +86,11 @@ try {
         ServerVersion = "2.1.0-rc"
     }
     
-    $script:logger = [Logger]::new($LogLevel)
+    $script:logger = [Logger]::new([LogLevel]::Parse([LogLevel], $LogLevel, $true))
     $script:logger.Info("Starting Pierce County M365 MCP Server v2.1.0-rc")
-    
-    $script:orchestrationEngine = [OrchestrationEngine]::new($script:logger)
+
+    $aiManager = [AIManager]::new($script:logger, $config)
+    $script:orchestrationEngine = [OrchestrationEngine]::new($script:logger, $aiManager)
     $script:performanceMonitor = [PerformanceMonitor]::new($script:logger)
     
     $server = [MCPServer]::new($script:logger, $config)
