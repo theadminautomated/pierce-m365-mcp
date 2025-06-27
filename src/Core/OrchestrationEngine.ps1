@@ -32,6 +32,7 @@ class OrchestrationEngine {
     hidden [InternalReasoningEngine] $ReasoningEngine
     hidden [ConfidenceEngine] $ConfidenceEngine
     hidden [CodeExecutionEngine] $CodeExecutionEngine
+    hidden [WebSearchEngine] $WebSearchEngine
     hidden [System.Collections.Generic.List[hashtable]] $Checkpoints
     
     OrchestrationEngine([Logger]$logger) {
@@ -46,6 +47,7 @@ class OrchestrationEngine {
         $this.ToolRegistry = [ToolRegistry]::new($logger)
         $this.ContextManager = [ContextManager]::new($logger)
         $this.CodeExecutionEngine = [CodeExecutionEngine]::new($logger)
+        $this.WebSearchEngine = [WebSearchEngine]::new($logger)
         $this.ReasoningEngine = [InternalReasoningEngine]::new($logger, $this.ContextManager, $this.CodeExecutionEngine)
         $this.ConfidenceEngine = [ConfidenceEngine]::new($logger)
         $this.Checkpoints = [System.Collections.Generic.List[hashtable]]::new()
@@ -107,6 +109,8 @@ class OrchestrationEngine {
             $session.AddContext('EntityExtractionConfidence', $metrics)
             if (-not $metrics.IsHighConfidence) {
                 $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='EntityExtraction'; Metrics=$metrics }, $session) | Out-Null
+                $searchContext = "$($request.Input)"
+                $session.AddContext('WebSearch', $this.WebSearchEngine.Search($searchContext, 3))
                 $fallback = $this.RuleParser.Parse($request.Input)
                 if ($fallback.Users.Count -gt 0 -or $fallback.Mailboxes.Count -gt 0 -or $fallback.Groups.Count -gt 0) {
                     $session.AddContext('RuleBasedFallback', $true)
@@ -135,6 +139,7 @@ class OrchestrationEngine {
             $session.AddContext('ValidationConfidence', $valMetrics)
             if (-not $valMetrics.IsHighConfidence) {
                 $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='Validation'; Metrics=$valMetrics }, $session) | Out-Null
+                $session.AddContext('WebSearch', $this.WebSearchEngine.Search('m365 validation failure', 3))
             }
             
             # Determine orchestration strategy
@@ -150,6 +155,7 @@ class OrchestrationEngine {
             $session.AddContext('WorkflowConfidence', $wfMetrics)
             if (-not $wfMetrics.IsHighConfidence) {
                 $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='Workflow'; Metrics=$wfMetrics }, $session) | Out-Null
+                $session.AddContext('WebSearch', $this.WebSearchEngine.Search('m365 workflow error', 3))
             }
             
             # Update memory and context
@@ -262,6 +268,7 @@ class OrchestrationEngine {
                 $toolMetrics = $this.ConfidenceEngine.Evaluate('ToolExecution', 0.95)
                 if (-not $toolMetrics.IsHighConfidence) {
                     $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='ToolExecution'; Metrics=$toolMetrics; Tool=$toolStep.ToolName }, $session) | Out-Null
+                    $session.AddContext('WebSearch', $this.WebSearchEngine.Search($toolStep.ToolName, 3))
                 }
 
                 # Adaptive planning based on result
