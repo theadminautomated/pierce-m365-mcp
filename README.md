@@ -156,6 +156,13 @@ $exec = $server.OrchestrationEngine.CodeExecutionEngine.Execute('PowerShell', $c
 3. Initialize the tool registry with your organizational parameters
 4. Begin issuing natural language automation requests
 
+### Autostart Service
+Use `scripts/install-autostart.ps1` to register the watchdog service that keeps
+the MCP server running. The script detects Windows or Linux and installs either
+a Windows service or a systemd unit which launches `watchdog.ps1`. Run the
+script with administrative privileges so the server starts automatically and
+recovers from failures.
+
 ### Enterprise Deployment
 For production environments, refer to the deployment guide in `/docs/deployment/` for:
 - Service account configuration

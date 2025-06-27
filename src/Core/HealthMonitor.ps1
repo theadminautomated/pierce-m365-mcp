@@ -1,5 +1,3 @@
-cat <<'EOF' > src/Core/HealthMonitor.ps1
-cat > src/Core/HealthMonitor.ps1 <<'EOF'
 #Requires -Version 7.0
 <#
 .SYNOPSIS
