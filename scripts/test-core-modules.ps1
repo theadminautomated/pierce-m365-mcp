@@ -8,10 +8,11 @@ $repoRoot   = Split-Path -Parent $PSCommandPath | Split-Path -Parent
 $sourceRoot = Join-Path $repoRoot 'src'
 $coreModules = @(
     'Logger.ps1',
-    'VectorMemoryBank.ps1',
     'SemanticIndex.ps1',
-    'ContextManager.ps1',
+    'VectorMemoryBank.ps1',
     'EntityExtractor.ps1',
+    'ContextManager.ps1',
+    'AIManager.ps1',
     'ValidationEngine.ps1',
     'ToolRegistry.ps1',
     'SecurityManager.ps1',

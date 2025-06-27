@@ -13,6 +13,7 @@ class MCPServer {
     hidden [OrchestrationEngine] $OrchestrationEngine
     hidden [PerformanceMonitor] $PerformanceMonitor
     hidden [AsyncRequestProcessor] $AsyncProcessor
+    hidden [AIManager] $AIManager
     hidden [hashtable] $Configuration
     hidden [string] $ServerVersion
     hidden [DateTime] $StartTime
@@ -42,8 +43,9 @@ class MCPServer {
             $this.PerformanceMonitor = [PerformanceMonitor]::new($this.Logger)
             $this.HealthMonitor = [HealthMonitor]::new($this.Logger)
             
-            # Initialize orchestration engine
-            $this.OrchestrationEngine = [OrchestrationEngine]::new($this.Logger)
+            # Initialize AI manager and orchestration engine
+            $this.AIManager = [AIManager]::new($this.Logger, $this.Configuration)
+            $this.OrchestrationEngine = [OrchestrationEngine]::new($this.Logger, $this.AIManager)
             $this.AsyncProcessor = [AsyncRequestProcessor]::new($this.OrchestrationEngine, $this.Logger, 4)
             
             # Register enterprise tools

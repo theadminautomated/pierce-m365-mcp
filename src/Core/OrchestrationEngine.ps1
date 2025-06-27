@@ -29,13 +29,14 @@ class OrchestrationEngine {
     hidden [SecurityManager] $SecurityManager
     hidden [ToolRegistry] $ToolRegistry
     hidden [ContextManager] $ContextManager
+    hidden [AIManager] $AIManager
     hidden [InternalReasoningEngine] $ReasoningEngine
     hidden [ConfidenceEngine] $ConfidenceEngine
     hidden [CodeExecutionEngine] $CodeExecutionEngine
     hidden [WebSearchEngine] $WebSearchEngine
     hidden [System.Collections.Generic.List[hashtable]] $Checkpoints
     
-    OrchestrationEngine([Logger]$logger) {
+    OrchestrationEngine([Logger]$logger, [AIManager]$aiManager) {
         $this.Memory = [ConcurrentDictionary[string, object]]::new()
         $this.Tools = [ConcurrentDictionary[string, object]]::new()
         $this.ActiveSessions = [ConcurrentDictionary[string, object]]::new()
@@ -46,6 +47,7 @@ class OrchestrationEngine {
         $this.SecurityManager = [SecurityManager]::new($logger)
         $this.ToolRegistry = [ToolRegistry]::new($logger)
         $this.ContextManager = [ContextManager]::new($logger)
+        $this.AIManager = $aiManager
         $this.CodeExecutionEngine = [CodeExecutionEngine]::new($logger)
         $this.WebSearchEngine = [WebSearchEngine]::new($logger)
         $this.ReasoningEngine = [InternalReasoningEngine]::new($logger, $this.ContextManager, $this.CodeExecutionEngine)
@@ -94,8 +96,19 @@ class OrchestrationEngine {
             $session = [OrchestrationSession]::new($sessionId, $request.Initiator, $startTime)
             $this.ActiveSessions.TryAdd($sessionId, $session)
             
-            # Parse and extract entities with intelligent correction
-            $extractedEntities = $this.EntityExtractor.ExtractAndNormalize($request.Input, $session)
+            # Parse and extract entities using AI provider if available
+            if ($this.AIManager) {
+                try {
+                    $extractedEntities = $this.AIManager.ParseEntities($request.Input, $null)
+                    $session.AddContext('AIProviderUsed', $true)
+                } catch {
+                    $this.Logger.Warning('AI entity parsing failed, falling back', @{Error=$_.Exception.Message})
+                    $extractedEntities = $null
+                }
+            }
+            if (-not $extractedEntities) {
+                $extractedEntities = $this.EntityExtractor.ExtractAndNormalize($request.Input, $session)
+            }
             $session.AddContext("ExtractedEntities", $extractedEntities)
 
             # Evaluate extraction confidence
