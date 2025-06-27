@@ -20,7 +20,8 @@ $coreModules = @(
     "src\Core\Logger.ps1",
     "src\Core\SecurityManager.ps1",
     "src\Core\InternalReasoningEngine.ps1",
-    "src\Core\ContextManager.ps1"
+    "src\Core\ContextManager.ps1",
+    "src\Core\ConfidenceEngine.ps1"
 )
 
 Write-Host "`nValidating Core Modules:" -ForegroundColor Yellow
@@ -87,9 +88,9 @@ if ($testFiles.Count -eq 0 -and $debugFiles.Count -eq 0) {
 }
 
 # Determine overall status
-if ($ValidationResults.CoreModules -eq 7 -and 
-    $ValidationResults.ToolDirectories -eq 5 -and 
-    $ValidationResults.EnterpriseTools -ge 3 -and 
+if ($ValidationResults.CoreModules -eq 8 -and
+    $ValidationResults.ToolDirectories -eq 5 -and
+    $ValidationResults.EnterpriseTools -ge 3 -and
     $ValidationResults.ConfigurationValid) {
     $ValidationResults.OverallStatus = "SUCCESS"
     $statusColor = "Green"
@@ -104,7 +105,7 @@ if ($ValidationResults.CoreModules -eq 7 -and
 Write-Host "`n" + "="*60 -ForegroundColor Cyan
 Write-Host "VALIDATION SUMMARY" -ForegroundColor Cyan
 Write-Host "="*60 -ForegroundColor Cyan
-Write-Host "Core Modules: $($ValidationResults.CoreModules)/7" -ForegroundColor White
+Write-Host "Core Modules: $($ValidationResults.CoreModules)/8" -ForegroundColor White
 Write-Host "Tool Directories: $($ValidationResults.ToolDirectories)/5" -ForegroundColor White  
 Write-Host "Enterprise Tools: $($ValidationResults.EnterpriseTools)" -ForegroundColor White
 Write-Host "Configuration: $(if ($ValidationResults.ConfigurationValid) { "Valid" } else { "Invalid" })" -ForegroundColor White

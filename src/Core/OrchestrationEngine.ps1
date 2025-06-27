@@ -29,6 +29,7 @@ class OrchestrationEngine {
     hidden [ToolRegistry] $ToolRegistry
     hidden [ContextManager] $ContextManager
     hidden [InternalReasoningEngine] $ReasoningEngine
+    hidden [ConfidenceEngine] $ConfidenceEngine
     
     OrchestrationEngine([Logger]$logger) {
         $this.Memory = [ConcurrentDictionary[string, object]]::new()
@@ -41,6 +42,7 @@ class OrchestrationEngine {
         $this.ToolRegistry = [ToolRegistry]::new($logger)
         $this.ContextManager = [ContextManager]::new($logger)
         $this.ReasoningEngine = [InternalReasoningEngine]::new($logger, $this.ContextManager)
+        $this.ConfidenceEngine = [ConfidenceEngine]::new($logger)
         
         $this.InitializeEngine()
     }
@@ -87,6 +89,19 @@ class OrchestrationEngine {
             # Parse and extract entities with intelligent correction
             $extractedEntities = $this.EntityExtractor.ExtractAndNormalize($request.Input, $session)
             $session.AddContext("ExtractedEntities", $extractedEntities)
+
+            # Evaluate extraction confidence
+            $scores = @()
+            foreach ($list in @($extractedEntities.Users, $extractedEntities.Mailboxes, $extractedEntities.Groups, $extractedEntities.Actions)) {
+                foreach ($e in $list) { $scores += $e.ConfidenceScore }
+            }
+            $avgScore = if ($scores.Count -gt 0) { ($scores | Measure-Object -Average).Average } else { 1 }
+            $this.ConfidenceEngine.RegisterOutcome('EntityExtraction', $avgScore -ge 0.95)
+            $metrics = $this.ConfidenceEngine.Evaluate('EntityExtraction', 0.95)
+            $session.AddContext('EntityExtractionConfidence', $metrics)
+            if (-not $metrics.IsHighConfidence) {
+                $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='EntityExtraction'; Metrics=$metrics }, $session) | Out-Null
+            }
             
             # Validate entities against Pierce County standards
             $validationResult = $this.ValidationEngine.ValidateEntities($extractedEntities, $session)
@@ -101,6 +116,13 @@ class OrchestrationEngine {
                     return [OrchestrationResult]::Failure($sessionId, $validationResult.Errors)
                 }
             }
+
+            $this.ConfidenceEngine.RegisterOutcome('Validation', $validationResult.IsValid)
+            $valMetrics = $this.ConfidenceEngine.Evaluate('Validation', 0.95)
+            $session.AddContext('ValidationConfidence', $valMetrics)
+            if (-not $valMetrics.IsHighConfidence) {
+                $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='Validation'; Metrics=$valMetrics }, $session) | Out-Null
+            }
             
             # Determine orchestration strategy
             $orchestrationPlan = $this.CreateOrchestrationPlan($extractedEntities, $session)
@@ -108,6 +130,14 @@ class OrchestrationEngine {
             
             # Execute autonomous orchestration
             $executionResult = $this.ExecuteOrchestration($orchestrationPlan, $session)
+
+            $overallSuccess = ($executionResult.Results | Where-Object { $_.Status -eq [ToolExecutionStatus]::Failed }).Count -eq 0
+            $this.ConfidenceEngine.RegisterOutcome('Workflow', $overallSuccess)
+            $wfMetrics = $this.ConfidenceEngine.Evaluate('Workflow', 0.95)
+            $session.AddContext('WorkflowConfidence', $wfMetrics)
+            if (-not $wfMetrics.IsHighConfidence) {
+                $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='Workflow'; Metrics=$wfMetrics }, $session) | Out-Null
+            }
             
             # Update memory and context
             $this.UpdateMemoryFromSession($session)
@@ -205,9 +235,16 @@ class OrchestrationEngine {
                 
                 $toolResult = $tool.Execute($executionContext)
                 $results.Add($toolResult)
-                
+
                 # Update context with results for next tool
                 $this.UpdateContextFromResult($context, $toolResult)
+
+                # Record execution confidence
+                $this.ConfidenceEngine.RegisterOutcome('ToolExecution', $toolResult.Status -eq [ToolExecutionStatus]::Completed)
+                $toolMetrics = $this.ConfidenceEngine.Evaluate('ToolExecution', 0.95)
+                if (-not $toolMetrics.IsHighConfidence) {
+                    $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='ToolExecution'; Metrics=$toolMetrics; Tool=$toolStep.ToolName }, $session) | Out-Null
+                }
                 
                 # Check for early termination conditions
                 if ($toolResult.Status -eq "Failed" -and $toolStep.IsCritical) {
