@@ -32,11 +32,14 @@ class InternalReasoningEngine {
     hidden [ContextManager] $ContextManager
     hidden [CodeExecutionEngine] $CodeExecutionEngine
     hidden [int] $MaxIterations = 5
+    hidden [string] $PythonExecutable = "python"
 
     InternalReasoningEngine([Logger]$logger, [ContextManager]$contextManager, [CodeExecutionEngine]$codeExecutionEngine) {
         $this.Logger = $logger
         $this.ContextManager = $contextManager
         $this.CodeExecutionEngine = $codeExecutionEngine
+        $envPython = [Environment]::GetEnvironmentVariable('MCP_PYTHON')
+        if ($envPython) { $this.PythonExecutable = $envPython }
     }
 
     [ReasoningResult] Resolve([hashtable]$issue, [OrchestrationSession]$session) {
@@ -50,6 +53,12 @@ class InternalReasoningEngine {
                 'LowConfidence'   { $result = $this.ResolveLowConfidence($issue, $context, $session) }
                 default           { $result.Resolution = 'Unknown issue type' }
             }
+
+            if (-not $result.Resolved) {
+                $pyResult = $this.InvokePythonEngine($issue, $context)
+                if ($pyResult -and $pyResult.Resolved) { $result = $pyResult }
+            }
+
             $metadata = @{ Type = $issue.Type; Session = $session.SessionId }
             $this.ContextManager.VectorMemoryBank.StoreMemory(
                 "Reasoning result: $($result.Resolution)",
@@ -123,6 +132,26 @@ class InternalReasoningEngine {
             $this.Logger.Warning('EvaluateNextStep failed', $_)
         }
         return $plan
+    }
+
+    hidden [ReasoningResult] InvokePythonEngine([hashtable]$issue, [hashtable]$context) {
+        try {
+            $issueJson = $issue | ConvertTo-Json -Depth 10 -Compress
+            $ctxJson = $context | ConvertTo-Json -Depth 10 -Compress
+            $args = @('-m', 'src.python.internal_reasoning_engine', '--issue', $issueJson, '--context', $ctxJson)
+            $output = & $this.PythonExecutable $args 2>$null
+            if (-not $output) { return $null }
+            $obj = $output | ConvertFrom-Json
+            $res = [ReasoningResult]::new()
+            $res.Resolved = $obj.resolved
+            $res.Resolution = $obj.resolution
+            $res.UpdatedRequest = $obj.updated_request
+            foreach ($a in $obj.actions) { $res.Actions.Add([string]$a) }
+            return $res
+        } catch {
+            $this.Logger.Warning('Python reasoning engine failed', $_)
+            return $null
+        }
     }
 }
 
