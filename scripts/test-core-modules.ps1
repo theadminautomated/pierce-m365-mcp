@@ -45,4 +45,8 @@ foreach ($module in $coreModules) {
     }
 }
 
+Write-Host "`n🎯 Testing Mcp.Core.psm1..." -ForegroundColor Cyan
+Import-Module (Join-Path $sourceRoot 'Mcp.Core.psm1') -Force
+Write-Host "✅ Mcp.Core.psm1 imported successfully" -ForegroundColor Green
+
 Write-Host "✅ Module testing complete" -ForegroundColor Green
