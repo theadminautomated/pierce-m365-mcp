@@ -507,7 +507,7 @@ class ToolRegistry {
         }
         
         # Add metrics section
-        $null = $sb.AppendLine("## Tool Metrics")
+        $null = $sb.AppendLine('# Tool Metrics')
         $sb.AppendLine("") | Out-Null
         $sb.AppendLine("Last updated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')") | Out-Null
         $sb.AppendLine("") | Out-Null
