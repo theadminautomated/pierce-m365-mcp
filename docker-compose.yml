@@ -1,0 +1,19 @@
+version: '3.9'
+services:
+  pierce-mcp-server:
+    build: .
+    container_name: pierce-mcp-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      MCP_LOG_LEVEL: "INFO"
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    networks:
+      - mcp-net
+
+networks:
+  mcp-net:
+    driver: bridge

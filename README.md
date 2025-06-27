@@ -208,7 +208,8 @@ $search = $server.OrchestrationEngine.WebSearchEngine.Search('m365 mailbox deleg
 4. Install Python dependencies with `pip install -r requirements.txt`
 5. Begin issuing natural language automation requests
 6. For a very simple overview, read `docs/HOW-TO-USE.md`
-7. Validate the installation by running `./scripts/test-core-modules.ps1`. This
+7. To learn container basics, read `docs/DEPLOYMENT-ELI5.md`
+8. Validate the installation by running `./scripts/test-core-modules.ps1`. This
    script loads core modules in dependency order starting with `Logger.ps1` and
    the new `OrchestrationTypes.ps1` definitions.
 
@@ -244,7 +245,7 @@ Build the included Docker image to run the server behind a lightweight REST API:
 
 ```bash
 docker build -t pierce-mcp .
-docker run -p 8080:8080 pierce-mcp
+docker run -p 3000:3000 pierce-mcp
 ```
 
 The container launches a FastAPI gateway that relays requests to the PowerShell
@@ -290,7 +291,7 @@ For production environments, refer to the deployment guide in `/docs/deployment/
 ## API REFERENCE
 
 When running in the Docker container, the server exposes these tools via a
-simple REST interface on port `8080`. Issue a `POST` to `/tools/call` with the
+simple REST interface on port `3000`. Issue a `POST` to `/tools/call` with the
 tool name and parameters to execute a workflow.
 
 ### Core Tools

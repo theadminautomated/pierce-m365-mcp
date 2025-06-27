@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pierce-mcp-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pierce-mcp-server
+  template:
+    metadata:
+      labels:
+        app: pierce-mcp-server
+    spec:
+      containers:
+        - name: mcp
+          image: pierce-mcp:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: MCP_LOG_LEVEL
+              value: "INFO"
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: logs
+          emptyDir: {}
+        - name: data
+          emptyDir: {}
