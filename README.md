@@ -130,6 +130,7 @@ $exec = $server.OrchestrationEngine.CodeExecutionEngine.Execute('PowerShell', $c
 - **High Availability**: Fault-tolerant design with automatic failover
 - **Scalability**: Horizontal scaling for enterprise workloads
 - **Performance Monitoring**: Real-time metrics and alerting
+- **Watchdog & Health Checks**: Automated service monitoring and self-healing routines
 - **Disaster Recovery**: Automated backup and restoration capabilities
 - **Change Management**: Version control and rollback procedures
 
@@ -213,6 +214,7 @@ For production environments, refer to the deployment guide in `/docs/deployment/
 - Context accuracy measurements
 - Confidence interval measurements
 - Resource utilization patterns
+- Server health status
 
 ### Audit Capabilities
 - Complete operation trail logging

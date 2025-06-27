@@ -39,6 +39,7 @@ class MCPServer {
             
             # Initialize performance monitoring
             $this.PerformanceMonitor = [PerformanceMonitor]::new($this.Logger)
+            $this.HealthMonitor = [HealthMonitor]::new($this.Logger)
             
             # Initialize orchestration engine
             $this.OrchestrationEngine = [OrchestrationEngine]::new($this.Logger)
@@ -148,6 +149,7 @@ class MCPServer {
     
     hidden [hashtable] HandleRequest([hashtable]$request) {
         $this.PerformanceMonitor.StartOperation("MessageProcessing")
+         = 
         
         try {
             # Log incoming request (sanitized)
@@ -192,6 +194,7 @@ class MCPServer {
                 Error = $_.Exception.Message
                 StackTrace = $_.ScriptStackTrace
             })
+            $success = $false
             
             return @{
                 jsonrpc = "2.0"
@@ -203,7 +206,7 @@ class MCPServer {
             }
         }
         finally {
-            $this.PerformanceMonitor.EndOperation("MessageProcessing")
+            $this.PerformanceMonitor.EndOperation("MessageProcessing", $success)
         }
     }
     
@@ -673,6 +676,7 @@ Last Updated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
                 average_response_time = $this.PerformanceMonitor.GetAverageResponseTime()
                 error_rate = $this.PerformanceMonitor.GetErrorRate()
             }
+            health = $this.HealthMonitor.GetLatestStatus()
         }
     }
     
@@ -789,13 +793,15 @@ Last Updated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
             # Dispose orchestration engine
             if ($this.OrchestrationEngine) {
                 $this.OrchestrationEngine.Dispose()
-            }
-            
             # Dispose performance monitor
             if ($this.PerformanceMonitor) {
                 $this.PerformanceMonitor.Dispose()
             }
-            
+
+            if ($this.HealthMonitor) {
+                $this.HealthMonitor.Stop()
+            }
+
             $shutdownTime = Get-Date
             $uptime = $shutdownTime - $this.StartTime
             
