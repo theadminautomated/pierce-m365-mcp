@@ -12,6 +12,7 @@ The Pierce County M365 MCP Server is an enterprise-grade, agentic automation pla
 - **Enterprise Compliance**: GCC-compliant with SOC 2, FISMA, and NIST frameworks
 - **Self-Healing**: Automatic error recovery, context correction, and performance optimization
 - **Modular Design**: Plugin-based architecture for extensibility and maintainability
+- **Cross-Platform Compatibility**: Operates uniformly across VS Code, Copilot Studio, and AIFoundry
 
 ### System Architecture
 
@@ -30,6 +31,7 @@ src/
 │   ├── InternalReasoningEngine.ps1 # Automated reasoning and resolution
 │   ├── ConfidenceEngine.ps1       # Statistical confidence interval engine
 │   ├── CodeExecutionEngine.ps1    # Sandboxed code execution service
+│   ├── WebSearchEngine.ps1        # Lightweight web search for reasoning
 │   └── SemanticIndex.ps1          # Open-source semantic search & embeddings
 └── Tools/                         # MCP tool implementations
     ├── Accounts/                  # Account lifecycle management
@@ -100,6 +102,13 @@ The Code Execution Engine executes and validates code snippets in a secure sandb
 $exec = $server.OrchestrationEngine.CodeExecutionEngine.Execute('PowerShell', $code, $params, 10, $true)
 ```
 
+### Web Search Engine
+The Web Search Engine integrates open search endpoints (such as DuckDuckGo) without relying on proprietary APIs. It is invoked exclusively by the Confidence Interval Engine when a low-confidence situation is detected and before the Internal Reasoning Engine is executed. Results are rate limited, parsed, and passed directly to the reasoning engine for deeper analysis.
+
+```powershell
+$search = $server.OrchestrationEngine.WebSearchEngine.Search('m365 mailbox delegation audit', 5)
+```
+
 ### Memory Architecture
 - **TF-IDF Vectorization**: Open-source term frequency-inverse document frequency analysis
 - **Cosine Similarity**: Semantic search using mathematical similarity measurements
@@ -154,10 +163,11 @@ $exec = $server.OrchestrationEngine.CodeExecutionEngine.Execute('PowerShell', $c
 - Exchange Online PowerShell V3
 - Appropriate M365 administrative permissions
 - Visual Studio Code (for MCP integration)
+- Copilot Studio or AIFoundry compatible environment
 
 ### Quick Start
 1. Clone the repository to your local machine
-2. Configure the MCP server in VS Code via `.vscode/mcp.json`
+2. Configure the MCP server using `.vscode/mcp.json` (works in VS Code, Copilot Studio, or AIFoundry)
 3. Initialize the tool registry with your organizational parameters
 4. Begin issuing natural language automation requests
 

@@ -42,6 +42,7 @@ $coreModules = @(
     'InternalReasoningEngine.ps1', # Automated reasoning and correction
     'RuleBasedParser.ps1',     # Fallback regex/dictionary parser
     'EntityExtractor.ps1',      # Entity extraction
+    'WebSearchEngine.ps1',     # Contextual web search
     'OrchestrationEngine.ps1'   # Main orchestration engine
 )
 
