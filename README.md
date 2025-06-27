@@ -101,6 +101,11 @@ $issue = @{ Type = 'ValidationFailure'; ValidationResult = $result }
 $resolution = $server.OrchestrationEngine.ReasoningEngine.Resolve($issue, $session)
 ```
 
+By default the PowerShell engine launches `python` from the system path. Set the
+`MCP_PYTHON` environment variable to override the executable if a specific
+runtime is required. The reasoning result is merged back into the workflow when
+the Python engine reports `resolved = true`.
+
 ### Confidence Interval Engine
 The Confidence Interval Engine continuously measures statistical confidence for entity extraction, validation, tool execution, and overall workflows. It calculates Wilson score intervals using historical outcomes and logs metrics for audit. When any lower bound falls below 95%, the engine invokes the Internal Reasoning Engine to re-analyze context and apply corrective strategies.
 
