@@ -44,6 +44,7 @@ class InternalReasoningEngine {
             switch ($issue.Type) {
                 'ValidationFailure' { $result = $this.ResolveValidationFailure($issue, $context, $session) }
                 'ToolError'       { $result = $this.ResolveToolError($issue, $context, $session) }
+                'LowConfidence'   { $result = $this.ResolveLowConfidence($issue, $context, $session) }
                 default           { $result.Resolution = 'Unknown issue type' }
             }
             $metadata = @{ Type = $issue.Type; Session = $session.SessionId }
@@ -82,6 +83,16 @@ class InternalReasoningEngine {
         $result = [ReasoningResult]::new()
         $result.Resolution = 'Tool execution error analyzed'
         $result.Actions.Add("Error: $($issue.Error)")
+        return $result
+    }
+
+    hidden [ReasoningResult] ResolveLowConfidence([hashtable]$issue, [hashtable]$context, [OrchestrationSession]$session) {
+        $result = [ReasoningResult]::new()
+        $metrics = $issue.Metrics
+        $stage = $issue.Stage
+        $result.Resolution = "Low confidence detected at $stage"
+        $result.Actions.Add("LowerBound: $($metrics.LowerBound)")
+        $result.Actions.Add('Reanalyzing context and suggesting improvements')
         return $result
     }
 }

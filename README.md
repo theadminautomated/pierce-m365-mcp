@@ -28,6 +28,7 @@ src/
 │   ├── ContextManager.ps1         # Persistent context & relationship tracking
 │   ├── VectorMemoryBank.ps1       # Advanced vector-based memory system
 │   ├── InternalReasoningEngine.ps1 # Automated reasoning and resolution
+│   ├── ConfidenceEngine.ps1       # Statistical confidence interval engine
 │   └── SemanticIndex.ps1          # Open-source semantic search & embeddings
 └── Tools/                         # MCP tool implementations
     ├── Accounts/                  # Account lifecycle management
@@ -45,6 +46,7 @@ src/
 - **Context Persistence**: Advanced vector-based memory with semantic search
 - **Self-Correction**: Automatic error detection, analysis, and remediation
 - **Internal Reasoning Engine**: Aggregates context to resolve ambiguity and errors automatically
+- **Confidence Interval Engine**: Measures statistical confidence for every action
 - **Performance Learning**: Continuous optimization based on execution patterns
 - **Memory Intelligence**: Long-term organizational knowledge and pattern recognition
 
@@ -72,6 +74,16 @@ The Internal Reasoning Engine aggregates session context, historical actions, an
 ```powershell
 $issue = @{ Type = 'ValidationFailure'; ValidationResult = $result }
 $resolution = $server.OrchestrationEngine.ReasoningEngine.Resolve($issue, $session)
+```
+
+### Confidence Interval Engine
+The Confidence Interval Engine continuously measures statistical confidence for entity extraction, validation, tool execution, and overall workflows. It calculates Wilson score intervals using historical outcomes and logs metrics for audit. When any lower bound falls below 95%, the engine invokes the Internal Reasoning Engine to re-analyze context and apply corrective strategies.
+
+```powershell
+$metrics = $server.OrchestrationEngine.ConfidenceEngine.Evaluate('ToolExecution', 0.95)
+if (-not $metrics.IsHighConfidence) {
+    $server.OrchestrationEngine.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='ToolExecution'; Metrics=$metrics }, $session)
+}
 ```
 
 ### Memory Architecture
@@ -184,6 +196,7 @@ For production environments, refer to the deployment guide in `/docs/deployment/
 - Tool execution success rates
 - Security validation effectiveness
 - Context accuracy measurements
+- Confidence interval measurements
 - Resource utilization patterns
 
 ### Audit Capabilities

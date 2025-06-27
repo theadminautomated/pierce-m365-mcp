@@ -13,6 +13,7 @@ $coreModules = @(
     'ValidationEngine.ps1',
     'ToolRegistry.ps1',
     'SecurityManager.ps1',
+    'ConfidenceEngine.ps1',
     'InternalReasoningEngine.ps1',
     'OrchestrationEngine.ps1'
 )
