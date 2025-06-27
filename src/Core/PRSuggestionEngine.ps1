@@ -1,5 +1,5 @@
 #Requires -Version 7.0
-<%
+<#
 .SYNOPSIS
     Pull Request Suggestion Engine for MCP Server
 .DESCRIPTION
@@ -9,7 +9,7 @@
 .NOTES
     Author: Pierce County IT Solutions Architecture
     Compliance: GCC, SOC2, NIST
-%>
+#>
 
 using namespace System.IO
 
@@ -48,10 +48,17 @@ class PRSuggestionEngine {
             }
         }
 
-        $logBody = $testLog -join "`n"
-        $prBody = "### Change Description`n$changeDescription`n`n### Affected Files`n$files`n`n### Test Logs`n```
-$logBody
-```"
+        $logBodyJoined = $testLog -join "`n"
+        $prBody = @"
+### Change Description
+$changeDescription
+
+### Affected Files
+$files
+
+### Test Logs
+$logBodyJoined
+"@
 
         gh pr create --base $this.BaseBranch --head $branch --title $changeDescription --body $prBody | Out-Null
         $prUrl = gh pr view --json url -q '.url'

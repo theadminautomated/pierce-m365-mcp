@@ -90,7 +90,11 @@ The engine now performs fuzzy matching against organizational directories when v
 
 **Python Implementation**
 
-To support advanced reasoning and easier integration with AI libraries, the reasoning component has been refactored into a standalone Python module located in `src/python/internal_reasoning_engine.py`. The PowerShell orchestration engine invokes this module for complex analysis, ensuring language-agnostic operation and modern extensibility.
+To support advanced reasoning and easier integration with AI libraries, the reasoning component has been refactored into a standalone Python module located in `src/python/internal_reasoning_engine.py`. The PowerShell orchestration engine invokes this module for complex analysis, ensuring language-agnostic operation and modern extensibility. You can also run the engine directly:
+
+```bash
+python -m src.python.internal_reasoning_engine --issue '{"Type":"ToolError","Error":"timeout"}' --context '{}'
+```
 
 ```powershell
 $issue = @{ Type = 'ValidationFailure'; ValidationResult = $result }
@@ -227,7 +231,9 @@ docker run -p 8080:8080 pierce-mcp
 
 The container launches a FastAPI gateway that relays requests to the PowerShell
 orchestration engine. Specify an alternate script path with the `MCP_SCRIPT`
-environment variable if required.
+environment variable if required. The gateway imports `src/Mcp.Core.psm1` before
+starting the server to avoid type-loading errors. Override the module location
+with `MCP_CORE_MODULE` if your layout differs.
 
 ### Enterprise Deployment
 For production environments, refer to the deployment guide in `/docs/deployment/` for:

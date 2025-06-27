@@ -8,11 +8,17 @@ from typing import Any, Dict
 from fastapi import FastAPI, HTTPException
 
 SCRIPT_PATH = os.environ.get("MCP_SCRIPT", "/opt/mcp/src/MCPServer.ps1")
+CORE_MODULE = os.environ.get("MCP_CORE_MODULE", "/opt/mcp/src/Mcp.Core.psm1")
 
 class MCPBridge:
-    def __init__(self, script: str) -> None:
+    def __init__(self, script: str, module: str) -> None:
         self.proc = subprocess.Popen([
-            "pwsh", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script
+            "pwsh",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            f"Import-Module '{module}'; & '{script}'"
         ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
 
     async def send(self, method: str, params: Dict[str, Any] | None = None) -> Any:
@@ -38,7 +44,7 @@ class MCPBridge:
         if self.proc and self.proc.poll() is None:
             self.proc.terminate()
 
-bridge = MCPBridge(SCRIPT_PATH)
+bridge = MCPBridge(SCRIPT_PATH, CORE_MODULE)
 app = FastAPI()
 
 @app.on_event("shutdown")

@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import re
 import difflib
+import json
 from typing import Any, Dict, List, Optional
 
 class ReasoningResult:
@@ -19,6 +20,15 @@ class ReasoningResult:
         self.updated_request = updated_request or {}
         self.actions = actions or []
         self.suggested_plan: Optional[Dict[str, Any]] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "resolved": self.resolved,
+            "resolution": self.resolution,
+            "updated_request": self.updated_request,
+            "actions": self.actions,
+            "suggested_plan": self.suggested_plan,
+        }
 
 class InternalReasoningEngine:
     """Python implementation of the MCP internal reasoning tool.
@@ -59,24 +69,44 @@ class InternalReasoningEngine:
         for key, value in context.items():
             if value is None:
                 continue
-            # Flatten single-item lists for simplicity
-            if isinstance(value, list) and len(value) == 1:
-                aggregated[key] = value[0]
+            if isinstance(value, list):
+                unique_vals = list(dict.fromkeys(value))
+                aggregated[key] = unique_vals[-50:]
+            elif isinstance(value, dict) and not value:
+                continue
             else:
                 aggregated[key] = value
         return aggregated
 
+    def _validate_inputs(self, issue: Dict[str, Any], context: Dict[str, Any]) -> None:
+        if not isinstance(issue, dict):
+            raise ValueError("issue must be a dictionary")
+        if not isinstance(context, dict):
+            raise ValueError("context must be a dictionary")
+
+    def _root_cause_analysis(self, issue: Dict[str, Any]) -> str:
+        msg = str(issue.get("Error", ""))
+        if "timeout" in msg.lower():
+            return "Timeout"
+        if "network" in msg.lower():
+            return "NetworkError"
+        if "permission" in msg.lower():
+            return "PermissionDenied"
+        return "Unknown"
+
     def resolve(self, issue: Dict[str, Any], context: Dict[str, Any]) -> ReasoningResult:
         result = ReasoningResult()
         try:
+            self._validate_inputs(issue, context)
+            normalized_context = self.aggregate_context(context)
             issue_type = issue.get("Type")
             self.logger.info("Internal reasoning triggered", extra={"issue": issue_type})
             if issue_type == "ValidationFailure":
-                result = self._resolve_validation_failure(issue, context)
+                result = self._resolve_validation_failure(issue, normalized_context)
             elif issue_type == "ToolError":
-                result = self._resolve_tool_error(issue, context)
+                result = self._resolve_tool_error(issue, normalized_context)
             elif issue_type == "LowConfidence":
-                result = self._resolve_low_confidence(issue, context)
+                result = self._resolve_low_confidence(issue, normalized_context)
             else:
                 result.resolution = "Unknown issue type"
         except Exception as exc:  # pragma: no cover - defensive
@@ -121,6 +151,8 @@ class InternalReasoningEngine:
         res = ReasoningResult()
         res.resolution = "Tool execution error analyzed"
         res.actions.append(f"Error: {issue.get('Error')}")
+        cause = self._root_cause_analysis(issue)
+        res.actions.append(f"RootCause: {cause}")
         return res
 
     def _resolve_low_confidence(self, issue: Dict[str, Any], context: Dict[str, Any]) -> ReasoningResult:
@@ -133,4 +165,19 @@ class InternalReasoningEngine:
             res.actions.append(f"LowerBound: {lb}")
         res.actions.append("Reanalyzing context and suggesting improvements")
         return res
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run MCP internal reasoning")
+    parser.add_argument("--issue", required=True, help="JSON string describing the issue")
+    parser.add_argument("--context", required=True, help="JSON string describing context")
+    args = parser.parse_args()
+
+    engine = InternalReasoningEngine()
+    issue = json.loads(args.issue)
+    context = json.loads(args.context)
+    result = engine.resolve(issue, context)
+    print(json.dumps(result.to_dict()))
 
