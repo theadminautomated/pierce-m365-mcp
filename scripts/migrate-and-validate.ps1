@@ -215,6 +215,7 @@ function Test-NewArchitecture {
         "ToolRegistry.ps1",
         "Logger.ps1",
         "SecurityManager.ps1",
+        "InternalReasoningEngine.ps1",
         "ContextManager.ps1"
     )
     

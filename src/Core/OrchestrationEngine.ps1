@@ -28,6 +28,7 @@ class OrchestrationEngine {
     hidden [SecurityManager] $SecurityManager
     hidden [ToolRegistry] $ToolRegistry
     hidden [ContextManager] $ContextManager
+    hidden [InternalReasoningEngine] $ReasoningEngine
     
     OrchestrationEngine([Logger]$logger) {
         $this.Memory = [ConcurrentDictionary[string, object]]::new()
@@ -39,6 +40,7 @@ class OrchestrationEngine {
         $this.SecurityManager = [SecurityManager]::new($logger)
         $this.ToolRegistry = [ToolRegistry]::new($logger)
         $this.ContextManager = [ContextManager]::new($logger)
+        $this.ReasoningEngine = [InternalReasoningEngine]::new($logger, $this.ContextManager)
         
         $this.InitializeEngine()
     }
@@ -89,7 +91,15 @@ class OrchestrationEngine {
             # Validate entities against Pierce County standards
             $validationResult = $this.ValidationEngine.ValidateEntities($extractedEntities, $session)
             if (-not $validationResult.IsValid) {
-                return [OrchestrationResult]::Failure($sessionId, $validationResult.Errors)
+                $reasoning = $this.ReasoningEngine.Resolve(@{
+                    Type = 'ValidationFailure'
+                    ValidationResult = $validationResult
+                    Request = $request
+                }, $session)
+                $session.AddContext('Reasoning', $reasoning)
+                if (-not $reasoning.Resolved) {
+                    return [OrchestrationResult]::Failure($sessionId, $validationResult.Errors)
+                }
             }
             
             # Determine orchestration strategy
@@ -114,7 +124,12 @@ class OrchestrationEngine {
                 Error = $_.Exception.Message
                 StackTrace = $_.ScriptStackTrace
             })
-            
+
+            $this.ReasoningEngine.Resolve(@{
+                Type = 'ToolError'
+                Error = $_.Exception.Message
+            }, $session) | Out-Null
+
             return [OrchestrationResult]::Error($sessionId, $_.Exception.Message)
         }
         finally {

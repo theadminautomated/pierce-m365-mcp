@@ -19,6 +19,7 @@ $coreModules = @(
     "src\Core\ToolRegistry.ps1",
     "src\Core\Logger.ps1",
     "src\Core\SecurityManager.ps1",
+    "src\Core\InternalReasoningEngine.ps1",
     "src\Core\ContextManager.ps1"
 )
 

@@ -27,6 +27,7 @@ src/
 │   ├── SecurityManager.ps1        # Security enforcement & threat detection
 │   ├── ContextManager.ps1         # Persistent context & relationship tracking
 │   ├── VectorMemoryBank.ps1       # Advanced vector-based memory system
+│   ├── InternalReasoningEngine.ps1 # Automated reasoning and resolution
 │   └── SemanticIndex.ps1          # Open-source semantic search & embeddings
 └── Tools/                         # MCP tool implementations
     ├── Accounts/                  # Account lifecycle management
@@ -43,6 +44,7 @@ src/
 - **Workflow Planning**: Multi-step automation with dependency resolution
 - **Context Persistence**: Advanced vector-based memory with semantic search
 - **Self-Correction**: Automatic error detection, analysis, and remediation
+- **Internal Reasoning Engine**: Aggregates context to resolve ambiguity and errors automatically
 - **Performance Learning**: Continuous optimization based on execution patterns
 - **Memory Intelligence**: Long-term organizational knowledge and pattern recognition
 
@@ -63,6 +65,14 @@ The system includes a sophisticated, open-source vector memory bank that provide
 - **Entity Intelligence**: Deep understanding of user, mailbox, and resource relationships
 - **Pattern Recognition**: Automated detection of operational patterns and anomalies
 - **Predictive Analytics**: AI-driven predictions for user needs and system optimization
+
+### Internal Reasoning Engine
+The Internal Reasoning Engine aggregates session context, historical actions, and tool outputs to automatically analyze errors or ambiguous input. It provides corrective suggestions and is triggered whenever validation fails or a tool encounters an unexpected state.
+
+```powershell
+$issue = @{ Type = 'ValidationFailure'; ValidationResult = $result }
+$resolution = $server.OrchestrationEngine.ReasoningEngine.Resolve($issue, $session)
+```
 
 ### Memory Architecture
 - **TF-IDF Vectorization**: Open-source term frequency-inverse document frequency analysis
