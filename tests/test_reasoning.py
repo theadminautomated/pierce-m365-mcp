@@ -27,6 +27,16 @@ class ReasoningTests(unittest.TestCase):
         self.assertFalse(res.resolved)
         self.assertIn("Escalation", res.resolution)
 
+    def test_extract_identifier_email(self):
+        text = "Error: user alice.jones@example.com not found"
+        ident = self.engine._extract_identifier(text)
+        self.assertEqual(ident, "alice.jones@example.com")
+
+    def test_extract_identifier_token(self):
+        text = "Validation failed for mailbox shared_mailbox_01"
+        ident = self.engine._extract_identifier(text)
+        self.assertEqual(ident, "shared_mailbox_01")
+
 
 if __name__ == '__main__':
     unittest.main()
