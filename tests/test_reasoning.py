@@ -23,5 +23,6 @@ class ReasoningTests(unittest.TestCase):
         self.assertFalse(res.resolved)
         self.assertIn("Escalation", res.resolution)
 
+
 if __name__ == '__main__':
     unittest.main()

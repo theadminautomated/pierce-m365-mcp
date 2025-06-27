@@ -3,7 +3,8 @@ import logging
 import re
 import difflib
 import json
-from typing import Any, Dict, List, Optional
+import os
+from typing import Any, Dict, List, Optional, Tuple
 
 class ReasoningResult:
     """Represents the outcome of a reasoning attempt."""
@@ -77,7 +78,6 @@ class InternalReasoningEngine:
         redundant values so reasoning routines have a consistent view of
         the session state.
         """
-
         aggregated: Dict[str, Any] = {}
         for key, value in context.items():
             if value is None:
@@ -85,10 +85,13 @@ class InternalReasoningEngine:
             if isinstance(value, list):
                 unique_vals = list(dict.fromkeys(value))
                 aggregated[key] = unique_vals[-50:]
-            elif isinstance(value, dict) and not value:
-                continue
+            elif isinstance(value, dict):
+                if value:
+                    aggregated[key] = value
             else:
                 aggregated[key] = value
+
+        aggregated["environment"] = self.collect_environment_context()
         return aggregated
 
     def _validate_inputs(self, issue: Dict[str, Any], context: Dict[str, Any]) -> None:
@@ -107,7 +110,6 @@ class InternalReasoningEngine:
             return "PermissionDenied"
         if "rate" in msg.lower() and "limit" in msg.lower():
             return "RateLimit"
-        return "Unknown"
 
     def _dispatch(self, issue: Dict[str, Any], context: Dict[str, Any]) -> ReasoningResult:
         """Route issue types to the correct handler."""
@@ -186,6 +188,11 @@ class InternalReasoningEngine:
         res.actions.append(f"Error: {issue.get('Error')}")
         cause = self._root_cause_analysis(issue)
         res.actions.append(f"RootCause: {cause}")
+        resolved, actions = self._suggest_next_steps(cause)
+        res.actions.extend(actions)
+        res.resolved = resolved
+        if resolved:
+            res.resolution = "Automatic remediation suggested"
         return res
 
     def _resolve_low_confidence(self, issue: Dict[str, Any], context: Dict[str, Any]) -> ReasoningResult:
@@ -197,6 +204,7 @@ class InternalReasoningEngine:
         if lb is not None:
             res.actions.append(f"LowerBound: {lb}")
         res.actions.append("Reanalyzing context and suggesting improvements")
+        res.resolved = False
         return res
 
 

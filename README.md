@@ -86,6 +86,7 @@ The Internal Reasoning Engine aggregates session context, historical actions, an
 
 The release candidate introduces an improved context aggregation routine that normalizes session data and removes ambiguity before analysis. This enhancement enables more accurate corrections and allows the engine to generate self-healing plans with minimal iteration.
 
+
 The engine now performs multi-iteration analysis. When an issue cannot be resolved on the first pass, the engine automatically retries with updated context and suggested corrections up to three times before escalating to human review. Every attempt is fully audit logged.
 
 The engine now performs fuzzy matching against organizational directories when validation errors occur, automatically correcting mistyped user or mailbox names whenever possible.
@@ -96,6 +97,12 @@ To support advanced reasoning and easier integration with AI libraries, the reas
 
 ```bash
 python -m src.python.internal_reasoning_engine --issue '{"Type":"ToolError","Error":"timeout"}' --context '{}'
+```
+
+The command outputs a JSON object describing the proposed resolution and any recommended actions:
+
+```json
+{"resolved": true, "resolution": "Automatic remediation suggested", "actions": ["Retry operation with exponential backoff"]}
 ```
 
 ```powershell
