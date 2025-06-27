@@ -178,6 +178,7 @@ $search = $server.OrchestrationEngine.WebSearchEngine.Search('m365 mailbox deleg
 3. Initialize the tool registry with your organizational parameters
 4. Install Python dependencies with `pip install -r requirements.txt`
 5. Begin issuing natural language automation requests
+6. For a very simple overview, read `docs/HOW-TO-USE.md`
 
 ### Autostart Service
 Use `scripts/install-autostart.ps1` to register the watchdog service that keeps
