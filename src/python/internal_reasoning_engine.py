@@ -1,5 +1,7 @@
 from __future__ import annotations
 import logging
+import re
+import difflib
 from typing import Any, Dict, List, Optional
 
 class ReasoningResult:
@@ -29,6 +31,21 @@ class InternalReasoningEngine:
     def __init__(self, logger: Optional[logging.Logger] = None, max_iterations: int = 5) -> None:
         self.logger = logger or logging.getLogger(__name__)
         self.max_iterations = max_iterations
+
+    def _suggest_match(self, value: str, candidates: List[str]) -> Optional[str]:
+        """Return the closest match using fuzzy matching."""
+        if not value or not candidates:
+            return None
+        matches = difflib.get_close_matches(value.lower(), [c.lower() for c in candidates], n=1, cutoff=0.7)
+        return matches[0] if matches else None
+
+    def _extract_identifier(self, text: str) -> str:
+        """Extract probable identifier (email or word) from validation text."""
+        match = re.search(r"[\w.-]+@[\w.-]+", text)
+        if match:
+            return match.group(0)
+        tokens = re.findall(r"[A-Za-z0-9._-]+", text)
+        return tokens[-1] if tokens else text
 
     def aggregate_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Aggregate known context into a normalized dictionary.
@@ -70,12 +87,34 @@ class InternalReasoningEngine:
     def _resolve_validation_failure(self, issue: Dict[str, Any], context: Dict[str, Any]) -> ReasoningResult:
         res = ReasoningResult()
         errors = issue.get("ValidationResult", {}).get("Errors", [])
+
         if not errors and issue.get("ValidationResult", {}).get("Warnings"):
             res.resolved = True
             res.resolution = "Validation warnings acknowledged"
+            return res
+
+        suggestions: Dict[str, str] = {}
+        for err in errors:
+            lowered = err.lower()
+            identifier = self._extract_identifier(err)
+            if "user" in lowered:
+                match = self._suggest_match(identifier, context.get("KnownUsers", []))
+                if match:
+                    suggestions[identifier] = match
+            elif "mailbox" in lowered:
+                match = self._suggest_match(identifier, context.get("KnownMailboxes", []))
+                if match:
+                    suggestions[identifier] = match
+
+        if suggestions:
+            res.resolved = True
+            res.resolution = "Entity corrections applied"
+            res.updated_request = {"Corrections": suggestions}
+            res.actions.append(f"Applied corrections: {suggestions}")
         else:
             res.resolution = "Unable to auto-resolve validation errors"
-        res.actions.append("Validation errors: {}".format("; ".join(errors)))
+            res.actions.append("Validation errors: {}".format("; ".join(errors)))
+
         return res
 
     def _resolve_tool_error(self, issue: Dict[str, Any], context: Dict[str, Any]) -> ReasoningResult:

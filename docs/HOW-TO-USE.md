@@ -11,6 +11,16 @@ This guide is written for very young users. It's super simple!
 4. **All done!**
    - If something goes wrong, the server fixes it automatically or lets an adult know.
 
+### Example of Self-Correction
+
+You can even make a typo and the server will figure it out:
+
+```
+"Grnt bob.smiht access to the operations calender"
+```
+
+The MCP server corrects the spelling, locates the right mailbox, and completes the task without stopping.
+
 That's it! The MCP server handles everything for you.
 
 *Guide updated for MCP Server v2.1.0-rc*
