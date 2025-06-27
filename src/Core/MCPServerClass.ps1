@@ -20,7 +20,7 @@ class MCPServer {
     MCPServer([Logger]$logger, [hashtable]$config) {
         $this.Logger = $logger
         $this.Configuration = $config
-        $this.ServerVersion = "2.0.0"
+        $this.ServerVersion = "2.1.0-rc"
         $this.StartTime = Get-Date
         $this.IsInitialized = $false
         

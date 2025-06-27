@@ -10,7 +10,7 @@
     - Comprehensive audit logging and monitoring
 .NOTES
     Author: Pierce County IT Solutions Architecture
-    Version: 2.0.0 - Enterprise Agentic Architecture
+    Version: 2.1.0-rc - Enterprise Agentic Architecture
     Compliance: GCC, SOC2, NIST Cybersecurity Framework
 #>
 
@@ -80,11 +80,11 @@ try {
         LogLevel = $LogLevel
         ConfigPath = $ConfigPath
         EnableDiagnostics = $EnableDiagnostics
-        ServerVersion = "2.0.0"
+        ServerVersion = "2.1.0-rc"
     }
     
     $script:logger = [Logger]::new($LogLevel)
-    $script:logger.Info("Starting Pierce County M365 MCP Server v2.0.0")
+    $script:logger.Info("Starting Pierce County M365 MCP Server v2.1.0-rc")
     
     $script:orchestrationEngine = [OrchestrationEngine]::new($script:logger)
     $script:performanceMonitor = [PerformanceMonitor]::new($script:logger)
@@ -107,7 +107,7 @@ function Initialize-Configuration {
         LogLevel = $LogLevel
         ToolsDirectory = Join-Path $moduleRoot "tools"
         EnableDiagnostics = $EnableDiagnostics
-        ServerVersion = "2.0.0"
+        ServerVersion = "2.1.0-rc"
     }
     
     # Load configuration file if specified

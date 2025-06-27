@@ -3,7 +3,15 @@ import logging
 from typing import Any, Dict, List, Optional
 
 class ReasoningResult:
-    def __init__(self, resolved: bool = False, resolution: str = "", updated_request: Optional[Dict[str, Any]] = None, actions: Optional[List[str]] = None):
+    """Represents the outcome of a reasoning attempt."""
+
+    def __init__(
+        self,
+        resolved: bool = False,
+        resolution: str = "",
+        updated_request: Optional[Dict[str, Any]] = None,
+        actions: Optional[List[str]] = None,
+    ) -> None:
         self.resolved = resolved
         self.resolution = resolution
         self.updated_request = updated_request or {}
@@ -18,9 +26,28 @@ class InternalReasoningEngine:
     PowerShell via `python -m` execution or as a REST microservice.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None, max_iterations: int = 5):
+    def __init__(self, logger: Optional[logging.Logger] = None, max_iterations: int = 5) -> None:
         self.logger = logger or logging.getLogger(__name__)
         self.max_iterations = max_iterations
+
+    def aggregate_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Aggregate known context into a normalized dictionary.
+
+        This method performs defensive checks and removes empty or
+        redundant values so reasoning routines have a consistent view of
+        the session state.
+        """
+
+        aggregated: Dict[str, Any] = {}
+        for key, value in context.items():
+            if value is None:
+                continue
+            # Flatten single-item lists for simplicity
+            if isinstance(value, list) and len(value) == 1:
+                aggregated[key] = value[0]
+            else:
+                aggregated[key] = value
+        return aggregated
 
     def resolve(self, issue: Dict[str, Any], context: Dict[str, Any]) -> ReasoningResult:
         result = ReasoningResult()

@@ -12,3 +12,5 @@ This guide is written for very young users. It's super simple!
    - If something goes wrong, the server fixes it automatically or lets an adult know.
 
 That's it! The MCP server handles everything for you.
+
+*Guide updated for MCP Server v2.1.0-rc*

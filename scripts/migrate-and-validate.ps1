@@ -8,7 +8,7 @@
     and configuration verification.
 .NOTES
     Author: Pierce County IT Solutions Architecture
-    Version: 2.0.0
+    Version: 2.1.0-rc
     Compatible: PowerShell 7.0+
 #>
 
@@ -483,7 +483,7 @@ function Update-Documentation {
 ---
 Last Updated: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") UTC
 Migration Status: COMPLETE ✅
-Architecture Version: 2.0.0-enterprise
+Architecture Version: 2.1.0-rc
 "@
             Set-Content -Path $todoPath -Value $todoContent -Force
             Write-MigrationLog "INFO" "TODO file updated with completion status"
@@ -545,7 +545,7 @@ Architecture Version: 2.0.0-enterprise
 
 ---
 Generated: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") UTC
-Version: 2.0.0-enterprise
+Version: 2.1.0-rc
 "@
         Set-Content -Path $deploymentGuidePath -Value $deploymentGuide -Force
         Write-MigrationLog "INFO" "Deployment guide created"
@@ -617,7 +617,7 @@ For support and documentation, see:
 
 ========================================
 Migration completed successfully! 🚀
-Pierce County M365 MCP Server v2.0.0 is ready for production use.
+Pierce County M365 MCP Server v2.1.0-rc is ready for production use.
 ========================================
 
 "@
@@ -671,7 +671,7 @@ try {
     Write-MigrationReport
     
     if ($MigrationResults.Success) {
-        Write-MigrationLog "INFO" "Migration completed successfully! Pierce County M365 MCP Server v2.0.0 is ready."
+        Write-MigrationLog "INFO" "Migration completed successfully! Pierce County M365 MCP Server v2.1.0-rc is ready."
         exit 0
     } else {
         Write-MigrationLog "ERROR" "Migration completed with errors. Review the report and resolve issues before proceeding."

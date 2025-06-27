@@ -8,7 +8,7 @@
     and tool output to determine corrective actions.
 .NOTES
     Author: Pierce County IT Solutions Architecture
-    Version: 2.0.0
+    Version: 2.1.0-rc
     Compliance: GCC, SOC2, NIST
 #>
 
