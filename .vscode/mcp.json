@@ -1,0 +1,18 @@
+{
+  "servers": {
+    "PierceCountyM365Admin": {
+      "type": "stdio",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/src/MCPServer.ps1"
+      ],
+      "env": {
+        "POWERSHELL_TELEMETRY_OPTOUT": "1"
+      }
+    }
+  }
+}

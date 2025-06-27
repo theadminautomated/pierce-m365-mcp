@@ -1,0 +1,64 @@
+{
+    "github.copilot.chat.agent.currentEditorContext.enabled": true,
+    "github.copilot.chat.agent.autoFix": true,
+    "github.copilot.chat.agent.thinkingTool": true,
+    "github.copilot.chat.agent.runTasks": true,
+    "github.copilot.chat.codesearch.enabled": true,
+    "github.copilot.chat.editor.temporalContext.enabled": true,
+    "github.copilot.chat.reviewSelection.enabled": true,
+    "github.copilot.chat.summarizeAgentConversationHistory.enabled": true,
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "github.copilot.editor.enableCodeActions": true,
+    "github.copilot.chat.scopeSelection": true,
+    "github.copilot.advanced": {
+        "enabled": true,
+        "useExperimentalFeatures": true,
+        "useExperimentalChatFeatures": true,
+        "useExperimentalCopilotChatFeatures": true,
+        "useExperimentalCopilotChatEditorFeatures": true,
+        "useExperimentalCopilotChatAgentFeatures": true,
+        "useExperimentalCopilotChatCodesearchFeatures": true,
+        "useExperimentalCopilotChatReviewFeatures": true,
+        "useExperimentalCopilotChatSummarizeFeatures": true,
+        "useExperimentalCopilotChatNextEditFeatures": true,
+        "useExperimentalCopilotChatContextFeatures": true,
+        "useExperimentalCopilotChatContextTypescriptFeatures": true,
+    },
+    // github copilot code compleion insructions
+    "github.copilot.chat.codeGeneration.instructions": [
+        {
+            "file": "${workspaceFolder}/.github/copilot-instructions.md"
+        }
+    ],
+
+
+    "github.copilot.chat.completionContext.typescript.mode": "on",
+    "terminal.integrated.profiles.windows": {
+        "Command Prompt": {
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "icon": "terminal-cmd"
+        },
+        "PowerShell 7+": {
+            "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+            "icon": "terminal-powershell",
+            "args": ["-ExecutionPolicy", "RemoteSigned"]
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "PowerShell 7+",
+    "chat.mcp.serverSampling": {
+        "default-mcp/.vscode/mcp.json: PierceCountyM365Admin": {
+            "allowedModels": [
+                "github.copilot-chat/claude-sonnet-4",
+                "github.copilot-chat/gpt-4.1",
+                "github.copilot-chat/o3-mini",
+                "github.copilot-chat/Azure-gpt-4.1",
+                "github.copilot-chat/o1",
+                "github.copilot-chat/o4-mini"
+            ]
+        },
+        "githubCopilotInstructions": {
+            "file": "${workspaceFolder}/.github/copilot-instructions.md"
+        }
+    },
+}

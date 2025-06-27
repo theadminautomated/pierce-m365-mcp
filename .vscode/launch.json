@@ -1,0 +1,48 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "PowerShell: Launch Current File",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${file}",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "PowerShell: Launch with Args",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${file}",
+            "args": ["${input:scriptArgs}"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "PowerShell: Debug MCP Server",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/.copilot/tools/mcp_server.ps1",
+            "args": ["-LogLevel", "DEBUG"],
+            "cwd": "${workspaceFolder}/.copilot/tools"
+        },
+        {
+            "name": "PowerShell: Test Department Lookup",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/.copilot/tools/test_department_lookup.ps1",
+            "args": ["-Detailed"],
+            "cwd": "${workspaceFolder}/.copilot/tools"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "scriptArgs",
+            "description": "Enter script arguments",
+            "default": "",
+            "type": "promptString"
+        }
+    ]
+}

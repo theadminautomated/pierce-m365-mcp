@@ -1,0 +1,54 @@
+# # Pierce County M365 MCP Server - Project Status
+# TODO:
+1. The final Task.
+Instructions:
+```
+You are an autonomous code agent.
+
+Task:  
+Architect, build, and integrate a robust, production-grade Internal Reasoning Tool for the MCP server. This tool will be invoked automatically whenever any MCP agent or process encounters ambiguity, consecutive errors, unclear intent, unexpected input, or any scenario where the next action is not straightforward.
+
+REQUIREMENTS:
+
+1. Advanced Context Aggregation:
+   - Automatically gather and synthesize all available context, session state, tool outputs, parsed entities, historical actions, logs, config, and system/environmental state.
+   - Handle nested and multistep context, supporting reasoning across chained requests and flows.
+
+2. Reasoning & Resolution Engine:
+   - Implement advanced reasoning techniques: multi-step logical analysis, analogical/counterfactual thinking, and root cause analysis.
+   - Dynamically simulate, hypothesize, and evaluate multiple possible actions or corrections.
+   - Auto-correct or clarify user input, disambiguate intent/entities, and propose or execute optimal next steps.
+   - Proactively suggest data gathering, fallback paths, or safe stops if the optimal action isn’t possible.
+
+3. Edge Case Handling:
+   - Recognize and robustly handle rare, ambiguous, malformed, or unexpected input or system states.
+   - Avoid infinite loops, silent failures, or leaving requests unresolved.
+   - Always resolve or escalate gracefully—never let the system freeze, fail, or break context.
+
+4. Seamless Integration:
+   - Expose the reasoning tool as an internal module/microservice callable by all agents and tool flows within MCP.
+   - Ensure seamless context/data handoff between the reasoning tool and all other components.
+   - All calls, hypotheses, corrections, and decisions are fully audit-logged.
+
+5. Enterprise-Grade Standards:
+   - Enforce strict input/output validation, parameter typing, and security.
+   - Comprehensive test coverage for all edge cases, flows, and error scenarios.
+   - Modular and extensible: easily add new reasoning patterns or data sources.
+
+6. Self-Improvement:
+   - Log and surface patterns in confusion or recurring issues for future refinement of the MCP as a whole.
+   - Auto-document functionality, usage, and reasoning logs for compliance and tuning.
+
+OUTPUT:
+- Deliver production-ready code, documentation, and integration instructions.
+- README.md must be updated with purpose, usage, integration, and sample flows.
+
+GOAL:
+- MCP server must become unbreakable and self-healing—able to handle any ambiguity, confusion, error, or unique scenario using the best possible internal reasoning, every time.
+
+Build, integrate, document, and ship.
+
+2. TODO: unless the requestor's extentionattribute1 value is 119, NO requestor can request to assign a user to another user's mailbox (public records). ONLY user to resource / shared mailboxes.
+3. TODO: Ensure all tools run without requiring user confirmation. Complete and the most advanced internal reasoning tool.
+4. TODO: Ensure the MCP autostart service is running and the MCP server is always available.
+5. TODO: Ensure the MCP server is always available and can handle all requests without failure.
