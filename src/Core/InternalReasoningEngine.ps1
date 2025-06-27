@@ -19,6 +19,7 @@ class ReasoningResult {
     [string]$Resolution
     [object]$UpdatedRequest
     [List[string]]$Actions
+    [OrchestrationPlan]$SuggestedPlan
 
     ReasoningResult() {
         $this.Resolved = $false
@@ -96,6 +97,32 @@ class InternalReasoningEngine {
         $result.Actions.Add("LowerBound: $($metrics.LowerBound)")
         $result.Actions.Add('Reanalyzing context and suggesting improvements')
         return $result
+    }
+
+    [OrchestrationPlan] EvaluateAndOptimizePlan([OrchestrationPlan]$plan, [EntityCollection]$entities, [OrchestrationSession]$session) {
+        try {
+            $suggestions = $this.ContextManager.GetContextualSuggestions($entities, $session.SessionId)
+            if ($suggestions.Count -gt 0) {
+                $session.AddContext('ReasoningSuggestions', $suggestions)
+                # For now just log suggestions; a real implementation would modify plan order
+                $this.Logger.Debug('Plan optimization suggestions generated', @{ SessionId = $session.SessionId; Count = $suggestions.Count })
+            }
+        } catch {
+            $this.Logger.Warning('Plan optimization failed', $_)
+        }
+        return $plan
+    }
+
+    [OrchestrationPlan] EvaluateNextStep([OrchestrationPlan]$plan, [int]$currentIndex, [ToolExecutionResult]$lastResult, [OrchestrationSession]$session) {
+        try {
+            if ($lastResult.Status -eq [ToolExecutionStatus]::Failed) {
+                $analysis = $this.Resolve(@{ Type='ToolError'; Error=$lastResult.Error }, $session)
+                if ($analysis.SuggestedPlan) { return $analysis.SuggestedPlan }
+            }
+        } catch {
+            $this.Logger.Warning('EvaluateNextStep failed', $_)
+        }
+        return $plan
     }
 }
 

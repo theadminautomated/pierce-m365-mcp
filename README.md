@@ -47,11 +47,13 @@ src/
 - **Context Persistence**: Advanced vector-based memory with semantic search
 - **Self-Correction**: Automatic error detection, analysis, and remediation
 - **Internal Reasoning Engine**: Aggregates context to resolve ambiguity and errors automatically
+- **Autonomous Execution**: All tools run without confirmation prompts; the reasoning engine handles corrections silently
 - **Rule-Based Fallback Parsing**: Regex and dictionary extraction when AI confidence is low
 - **Confidence Interval Engine**: Measures statistical confidence for every action
 - **Sandboxed Code Execution**: Validate and simulate scripts in a secure sandbox
 - **Performance Learning**: Continuous optimization based on execution patterns
 - **Memory Intelligence**: Long-term organizational knowledge and pattern recognition
+- **Checkpointing & Dynamic Routing**: Persistent checkpoints and adaptive plan optimization ensure context is never lost
 
 ### Enterprise Intelligence
 - **Entity Validation**: Comprehensive Pierce County naming convention enforcement
@@ -74,7 +76,7 @@ The system includes a sophisticated, open-source vector memory bank that provide
 - **Sliding Window Memory**: Low-importance context stored using a 50-item sliding window to control growth and remove duplicates
 
 ### Internal Reasoning Engine
-The Internal Reasoning Engine aggregates session context, historical actions, and tool outputs to automatically analyze errors or ambiguous input. It provides corrective suggestions and is triggered whenever validation fails or a tool encounters an unexpected state.
+The Internal Reasoning Engine aggregates session context, historical actions, and tool outputs to automatically analyze errors or ambiguous input. It now performs predictive plan optimization and dynamic rerouting when failures occur. All checkpoints are persisted for recovery and no workflow requires human confirmation.
 
 ```powershell
 $issue = @{ Type = 'ValidationFailure'; ValidationResult = $result }
