@@ -38,16 +38,26 @@ class InternalReasoningEngine:
     PowerShell via `python -m` execution or as a REST microservice.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None, max_iterations: int = 5) -> None:
+    def __init__(self, logger: Optional[logging.Logger] = None, max_iterations: int = 3) -> None:
         self.logger = logger or logging.getLogger(__name__)
-        self.max_iterations = max_iterations
+        # clamp the iteration count to a sane range
+        self.max_iterations = max(1, min(max_iterations, 10))
 
     def _suggest_match(self, value: str, candidates: List[str]) -> Optional[str]:
         """Return the closest match using fuzzy matching."""
         if not value or not candidates:
             return None
-        matches = difflib.get_close_matches(value.lower(), [c.lower() for c in candidates], n=1, cutoff=0.7)
-        return matches[0] if matches else None
+        lower_candidates = [c.lower() for c in candidates]
+        matches = difflib.get_close_matches(value.lower(), lower_candidates, n=1, cutoff=0.7)
+        if matches:
+            return matches[0]
+        # fallback to match against the local part of email addresses
+        local_parts = [c.split('@')[0] for c in lower_candidates]
+        match = difflib.get_close_matches(value.lower(), local_parts, n=1, cutoff=0.7)
+        if match:
+            idx = local_parts.index(match[0])
+            return lower_candidates[idx]
+        return None
 
     def _extract_identifier(self, text: str) -> str:
         """Extract probable identifier (email or word) from validation text."""
@@ -55,6 +65,9 @@ class InternalReasoningEngine:
         if match:
             return match.group(0)
         tokens = re.findall(r"[A-Za-z0-9._-]+", text)
+        for tok in tokens:
+            if "." in tok or "_" in tok:
+                return tok
         return tokens[-1] if tokens else text
 
     def aggregate_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -92,23 +105,43 @@ class InternalReasoningEngine:
             return "NetworkError"
         if "permission" in msg.lower():
             return "PermissionDenied"
+        if "rate" in msg.lower() and "limit" in msg.lower():
+            return "RateLimit"
         return "Unknown"
+
+    def _dispatch(self, issue: Dict[str, Any], context: Dict[str, Any]) -> ReasoningResult:
+        """Route issue types to the correct handler."""
+        issue_type = issue.get("Type")
+        if issue_type == "ValidationFailure":
+            return self._resolve_validation_failure(issue, context)
+        if issue_type == "ToolError":
+            return self._resolve_tool_error(issue, context)
+        if issue_type == "LowConfidence":
+            return self._resolve_low_confidence(issue, context)
+        res = ReasoningResult()
+        res.resolution = "Unknown issue type"
+        return res
 
     def resolve(self, issue: Dict[str, Any], context: Dict[str, Any]) -> ReasoningResult:
         result = ReasoningResult()
         try:
             self._validate_inputs(issue, context)
             normalized_context = self.aggregate_context(context)
-            issue_type = issue.get("Type")
-            self.logger.info("Internal reasoning triggered", extra={"issue": issue_type})
-            if issue_type == "ValidationFailure":
-                result = self._resolve_validation_failure(issue, normalized_context)
-            elif issue_type == "ToolError":
-                result = self._resolve_tool_error(issue, normalized_context)
-            elif issue_type == "LowConfidence":
-                result = self._resolve_low_confidence(issue, normalized_context)
-            else:
-                result.resolution = "Unknown issue type"
+            self.logger.info("Internal reasoning triggered", extra={"issue": issue.get("Type")})
+
+            current_issue = issue
+            for attempt in range(self.max_iterations):
+                if attempt:
+                    self.logger.debug("Reasoning reattempt %s", attempt + 1)
+                result = self._dispatch(current_issue, normalized_context)
+                if result.resolved:
+                    break
+                if result.updated_request:
+                    current_issue.update(result.updated_request)
+
+            if not result.resolved:
+                result.resolution = "Escalation required after max iterations"
+                result.actions.append("Escalated to human review")
         except Exception as exc:  # pragma: no cover - defensive
             self.logger.exception("Internal reasoning failure: %s", exc)
             result.resolution = str(exc)
