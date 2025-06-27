@@ -152,9 +152,18 @@ class Logger {
         
         # Event log target for Windows events
         if ($global:PSVersionTable.Platform -eq "Win32NT" -or $env:OS -eq "Windows_NT") {
+            $isAdmin = $false
             try {
-                $eventTarget = [EventLogTarget]::new("Pierce County MCP", [LogLevel]::Warning)
-                $this.AddTarget($eventTarget)
+                $id = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+                $principal = [System.Security.Principal.WindowsPrincipal]::new($id)
+                $isAdmin = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+            } catch {
+                $isAdmin = $false
+            }
+
+            try {
+                $eventTarget = [EventLogTarget]::new("Pierce County MCP", [LogLevel]::Warning, $isAdmin)
+                if ($eventTarget) { $this.AddTarget($eventTarget) }
             }
             catch {
                 # Event log registration might fail in non-admin contexts
@@ -448,11 +457,17 @@ class StructuredLogTarget : LogTargetBase {
 class EventLogTarget : LogTargetBase {
     [string] $Source
     [string] $LogName
-    
-    EventLogTarget([string]$source, [LogLevel]$minimumLevel) : base($minimumLevel) {
+
+    EventLogTarget([string]$source, [LogLevel]$minimumLevel, [bool]$hasPrivileges) : base($minimumLevel) {
         $this.Source = $source
         $this.LogName = "Application"
-        
+
+        if (-not $hasPrivileges) {
+            # Running without administrative privileges; use built-in Application source
+            $this.Source = 'Application'
+            return
+        }
+
         # Create event source if it doesn't exist. Some environments
         # (e.g. Security log access restrictions) throw when checking
         # SourceExists, so wrap in try/catch and fall back to the
