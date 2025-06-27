@@ -111,8 +111,26 @@ function Initialize-Configuration {
     if (-not $config.ContainsKey('AIProviders')) {
         $config.AIProviders = @()
     }
-    
+
+    Validate-Configuration -Config $config
+
     return $config
+}
+
+function Validate-Configuration {
+    param([hashtable]$Config)
+
+    if (-not $Config.AIProviders -or $Config.AIProviders.Count -eq 0) {
+        throw "Configuration must include at least one AI provider"
+    }
+
+    $default = $Config.DefaultAIProvider
+    if ($default) {
+        $names = $Config.AIProviders | ForEach-Object { $_.Name }
+        if ($names -notcontains $default) {
+            throw "DefaultAIProvider '$default' not found in AIProviders list"
+        }
+    }
 }
 
 function Start-MCPServer {
