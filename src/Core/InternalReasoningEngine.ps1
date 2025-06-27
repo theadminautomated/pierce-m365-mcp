@@ -29,11 +29,13 @@ class ReasoningResult {
 class InternalReasoningEngine {
     hidden [Logger] $Logger
     hidden [ContextManager] $ContextManager
+    hidden [CodeExecutionEngine] $CodeExecutionEngine
     hidden [int] $MaxIterations = 5
 
-    InternalReasoningEngine([Logger]$logger, [ContextManager]$contextManager) {
+    InternalReasoningEngine([Logger]$logger, [ContextManager]$contextManager, [CodeExecutionEngine]$codeExecutionEngine) {
         $this.Logger = $logger
         $this.ContextManager = $contextManager
+        $this.CodeExecutionEngine = $codeExecutionEngine
     }
 
     [ReasoningResult] Resolve([hashtable]$issue, [OrchestrationSession]$session) {

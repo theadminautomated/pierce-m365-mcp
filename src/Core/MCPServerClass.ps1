@@ -167,6 +167,7 @@ class MCPServer {
                 "logging/setLevel" { return $this.HandleLoggingSetLevel($request) }
                 "prompts/list" { return $this.HandlePromptsList($request) }
                 "prompts/get" { return $this.HandlePromptsGet($request) }
+                "code/execute" { return $this.HandleCodeExecute($request) }
                 default {
                     $this.Logger.Warning("Unknown method requested", @{
                         Method = $request.method
@@ -482,6 +483,33 @@ class MCPServer {
                 error = @{
                     code = -32602
                     message = "Invalid log level: $level"
+                }
+            }
+        }
+    }
+
+    hidden [hashtable] HandleCodeExecute([hashtable]$request) {
+        $lang = $request.params.language ?? 'PowerShell'
+        $code = $request.params.code
+        $params = $request.params.parameters
+        $dry = [bool]($request.params.dryRun)
+        $timeout = $request.params.timeoutSeconds ?? 10
+
+        try {
+            $execResult = $this.OrchestrationEngine.CodeExecutionEngine.Execute($lang, $code, $params, $timeout, $dry)
+            return @{
+                jsonrpc = '2.0'
+                id = $request.id
+                result = $execResult.ToHashtable()
+            }
+        } catch {
+            $this.Logger.Error('Code execution request failed', $_)
+            return @{
+                jsonrpc = '2.0'
+                id = $request.id
+                error = @{
+                    code = -32603
+                    message = $_.Exception.Message
                 }
             }
         }
