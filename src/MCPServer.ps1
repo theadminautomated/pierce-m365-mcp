@@ -77,29 +77,6 @@ $script:logger = $null
 $script:performanceMonitor = $null
 $script:isShuttingDown = $false
 
-# Initialize the server
-try {
-    $config = @{
-        LogLevel = $LogLevel
-        ConfigPath = $ConfigPath
-        EnableDiagnostics = $EnableDiagnostics
-        ServerVersion = "2.1.0-rc"
-    }
-    
-    $script:logger = [Logger]::new([LogLevel]::Parse([LogLevel], $LogLevel, $true))
-    $script:logger.Info("Starting Pierce County M365 MCP Server v2.1.0-rc")
-
-    $aiManager = [AIManager]::new($script:logger, $config)
-    $script:orchestrationEngine = [OrchestrationEngine]::new($script:logger, $aiManager)
-    $script:performanceMonitor = [PerformanceMonitor]::new($script:logger)
-    
-    $server = [MCPServer]::new($script:logger, $config)
-    $server.Start()
-}
-catch {
-    Write-Error "Failed to start MCP Server: $_"
-    exit 1
-}
 function Initialize-Configuration {
     param(
         [string]$LogLevel,

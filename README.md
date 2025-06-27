@@ -212,6 +212,8 @@ $search = $server.OrchestrationEngine.WebSearchEngine.Search('m365 mailbox deleg
 8. Validate the installation by running `./scripts/test-core-modules.ps1`. This
    script loads core modules in dependency order starting with `Logger.ps1` and
    the new `OrchestrationTypes.ps1` definitions.
+9. Start the server with `pwsh ./src/MCPServer.ps1`. The default
+   configuration in `mcp.config.json` is loaded automatically.
 
 ### Configurable AI Model Providers
 AI providers are defined in `mcp.config.json`. Each provider entry includes an endpoint, model name, authentication, and timeout. Example:
