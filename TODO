@@ -52,3 +52,4 @@ Build, integrate, document, and ship.
 3. TODO: Ensure all tools run without requiring user confirmation. Complete and the most advanced internal reasoning tool.
 4. TODO: Ensure the MCP autostart service is running and the MCP server is always available.
 5. TODO: Ensure the MCP server is always available and can handle all requests without failure.
+6. TODO: Refactor session coordination to event-driven messaging using a queue-based architecture (e.g., Azure Service Bus). Ensure reliable delivery and recovery.

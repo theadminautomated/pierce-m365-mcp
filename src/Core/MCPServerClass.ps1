@@ -12,6 +12,7 @@ class MCPServer {
     hidden [Logger] $Logger
     hidden [OrchestrationEngine] $OrchestrationEngine
     hidden [PerformanceMonitor] $PerformanceMonitor
+    hidden [AsyncRequestProcessor] $AsyncProcessor
     hidden [hashtable] $Configuration
     hidden [string] $ServerVersion
     hidden [DateTime] $StartTime
@@ -43,6 +44,7 @@ class MCPServer {
             
             # Initialize orchestration engine
             $this.OrchestrationEngine = [OrchestrationEngine]::new($this.Logger)
+            $this.AsyncProcessor = [AsyncRequestProcessor]::new($this.OrchestrationEngine, $this.Logger, 4)
             
             # Register enterprise tools
             $this.RegisterEnterpriseTools()
@@ -164,6 +166,8 @@ class MCPServer {
                 "initialized" { return $this.HandleInitialized($request) }
                 "tools/list" { return $this.HandleToolsList($request) }
                 "tools/call" { return $this.HandleToolsCall($request) }
+                "tools/callAsync" { return $this.HandleToolsCallAsync($request) }
+                "tools/result" { return $this.HandleToolsResult($request) }
                 "resources/list" { return $this.HandleResourcesList($request) }
                 "resources/read" { return $this.HandleResourcesRead($request) }
                 "logging/setLevel" { return $this.HandleLoggingSetLevel($request) }
@@ -309,6 +313,44 @@ class MCPServer {
                     message = "Tool execution failed: $($_.Exception.Message)"
                 }
             }
+        }
+    }
+
+    hidden [hashtable] HandleToolsCallAsync([hashtable]$request) {
+        $toolName = $request.params.name
+        $arguments = $request.params.arguments
+
+        try {
+            $orchRequest = $this.CreateOrchestrationRequest($toolName, $arguments)
+            $jobId = $this.AsyncProcessor.SubmitRequest($orchRequest)
+
+            return @{
+                jsonrpc = "2.0"
+                id = $request.id
+                result = @{ jobId = $jobId }
+            }
+        } catch {
+            $this.Logger.Error("Async tool execution failed", @{
+                ToolName = $toolName
+                Arguments = $arguments
+                Error = $_.Exception.Message
+            })
+            return @{
+                jsonrpc = "2.0"
+                id = $request.id
+                error = @{ code = -32603; message = "Async tool execution failed: $($_.Exception.Message)" }
+            }
+        }
+    }
+
+    hidden [hashtable] HandleToolsResult([hashtable]$request) {
+        $jobId = [Guid]$request.params.jobId
+        $result = $this.AsyncProcessor.GetResult($jobId)
+
+        if ($null -eq $result) {
+            return @{ jsonrpc = "2.0"; id = $request.id; result = @{ status = 'Running' } }
+        } else {
+            return @{ jsonrpc = "2.0"; id = $request.id; result = @{ status = 'Completed'; output = $result } }
         }
     }
     
@@ -793,6 +835,12 @@ Last Updated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
             # Dispose orchestration engine
             if ($this.OrchestrationEngine) {
                 $this.OrchestrationEngine.Dispose()
+            }
+
+            if ($this.AsyncProcessor) {
+                $this.AsyncProcessor.Dispose()
+            }
+
             # Dispose performance monitor
             if ($this.PerformanceMonitor) {
                 $this.PerformanceMonitor.Dispose()

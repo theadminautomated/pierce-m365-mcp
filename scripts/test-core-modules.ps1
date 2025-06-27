@@ -17,7 +17,8 @@ $coreModules = @(
     'SecurityManager.ps1',
     'ConfidenceEngine.ps1',
     'InternalReasoningEngine.ps1',
-    'OrchestrationEngine.ps1'
+    'OrchestrationEngine.ps1',
+    'AsyncRequestProcessor.ps1'
 )
 
 foreach ($module in $coreModules) {
