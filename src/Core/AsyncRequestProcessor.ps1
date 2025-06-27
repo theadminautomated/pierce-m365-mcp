@@ -13,6 +13,7 @@
 
 using namespace System.Collections.Concurrent
 
+using namespace System.Management.Automation.Runspaces
 class AsyncRequestProcessor {
     [RunspacePool] $RunspacePool
     [OrchestrationEngine] $Engine
@@ -47,6 +48,7 @@ class AsyncRequestProcessor {
     }
 
     [object] GetResult([Guid]$jobId) {
+        $result = $null
         $task = $null
         if ($this.Tasks.TryGetValue($jobId, [ref]$task)) {
             if ($task.AsyncResult.IsCompleted) {
@@ -60,7 +62,7 @@ class AsyncRequestProcessor {
                 return $result
             }
         }
-        return $null
+        return $result
     }
 
     [void] WaitAll() {
@@ -79,4 +81,3 @@ class AsyncRequestProcessor {
     }
 }
 
-Export-ModuleMember -Class AsyncRequestProcessor

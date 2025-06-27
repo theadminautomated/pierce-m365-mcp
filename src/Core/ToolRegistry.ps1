@@ -182,28 +182,30 @@ class ToolRegistry {
         $result = [ToolExecutionResult]::new($name)
         try {
             $tool = $this.GetTool($name)
-            $validation = $this.Validator.ValidateParameters($tool,$params)
-            if(-not $validation.IsValid) {
+            $validation = $this.Validator.ValidateParameters($tool, $params)
+            if (-not $validation.IsValid) {
                 $result.Status = [ToolExecutionStatus]::Failed
-                $result.Error = "Parameter validation failed: $($validation.Errors -join ', ')"
+                $result.Error  = "Parameter validation failed: $($validation.Errors -join ', ')"
                 return $result
             }
-            $output = switch($tool.Type) {
-                ([ToolType]::PowerShell) { $this.RunPsTool($tool,$params) }
-                ([ToolType]::Json)       { $this.RunJsonTool($tool,$params) }
-                ([ToolType]::Native)     { $this.RunNativeTool($tool,$params) }
+
+            $output = switch ($tool.Type) {
+                ([ToolType]::PowerShell) { $this.RunPsTool($tool, $params) }
+                ([ToolType]::Json)       { $this.RunJsonTool($tool, $params) }
+                ([ToolType]::Native)     { $this.RunNativeTool($tool, $params) }
                 default { throw "Unsupported tool type" }
             }
+
             $result.Result = $output
             $result.Status = [ToolExecutionStatus]::Completed
             return $result
         } catch {
             $result.Status = [ToolExecutionStatus]::Failed
-            $result.Error = $_.Exception.Message
+            $result.Error  = $_.Exception.Message
             throw
         } finally {
             $dur = (Get-Date) - $start
-            $this.Metrics.Record($name,$result.Status -eq [ToolExecutionStatus]::Completed,$dur)
+            $this.Metrics.Record($name, $result.Status -eq [ToolExecutionStatus]::Completed, $dur)
             $result.Duration = $dur
         }
     }
@@ -235,7 +237,10 @@ class ToolRegistry {
         switch($d.executionType) {
             'powershell' {
                 $cmd = $d.command
-                foreach($p in $params.GetEnumerator()) { $cmd = $cmd -replace "{{${($p.Key)}}}", $p.Value }
+                foreach ($p in $params.GetEnumerator()) {
+                    $token = "{{{0}}}" -f $p.Key
+                    $cmd = $cmd -replace [Regex]::Escape($token), $p.Value
+                }
                 return Invoke-Expression $cmd
             }
             'rest' {
@@ -243,8 +248,8 @@ class ToolRegistry {
             }
             default { throw "Unsupported executionType: $($d.executionType)" }
         }
+        return $null
     }
-
     hidden [object] RunNativeTool([ToolDefinition]$tool,[hashtable]$params) {
         $args = @()
         foreach($p in $params.GetEnumerator()) { $args += "--$($p.Key)"; $args += $p.Value }
@@ -254,4 +259,3 @@ class ToolRegistry {
     }
 }
 
-Export-ModuleMember -Cmdlet * -Function * -Variable * -Alias *

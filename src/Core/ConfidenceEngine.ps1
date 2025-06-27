@@ -81,4 +81,3 @@ class ConfidenceEngine {
     }
 }
 
-Export-ModuleMember -Class ConfidenceEngine, ConfidenceMetrics

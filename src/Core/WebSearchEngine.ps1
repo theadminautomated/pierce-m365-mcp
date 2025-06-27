@@ -68,4 +68,3 @@ class WebSearchEngine {
     }
 }
 
-Export-ModuleMember -Class WebSearchEngine, WebSearchResult

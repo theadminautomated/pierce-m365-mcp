@@ -106,4 +106,3 @@ class AIManager {
     }
 }
 
-Export-ModuleMember -Class AIManager, AIProvider, AIProviderConfig

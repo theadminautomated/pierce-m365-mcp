@@ -57,4 +57,3 @@ class HealthMonitor {
     }
 }
 
-Export-ModuleMember -Class HealthMonitor

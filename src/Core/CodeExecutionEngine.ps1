@@ -113,4 +113,3 @@ class CodeExecutionEngine {
     }
 }
 
-Export-ModuleMember -Class CodeExecutionEngine, ExecutionResult
