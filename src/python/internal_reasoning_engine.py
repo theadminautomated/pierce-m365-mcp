@@ -44,14 +44,6 @@ class InternalReasoningEngine:
         # clamp the iteration count to a sane range
         self.max_iterations = max(1, min(max_iterations, 10))
 
-    def collect_environment_context(self) -> Dict[str, str]:
-        """Collect minimal environment information for diagnostics."""
-        return {
-            "os": os.name,
-            "python_version": os.getenv("PYTHON_VERSION", ""),
-            "hostname": os.uname().nodename if hasattr(os, "uname") else "",
-        }
-
     def _suggest_match(self, value: str, candidates: List[str]) -> Optional[str]:
         """Return the closest match using fuzzy matching."""
         if not value or not candidates:
@@ -118,34 +110,6 @@ class InternalReasoningEngine:
             return "PermissionDenied"
         if "rate" in msg.lower() and "limit" in msg.lower():
             return "RateLimit"
-        if "not found" in msg.lower() or "404" in msg:
-            return "NotFound"
-        if "auth" in msg.lower() or "login" in msg.lower():
-            return "AuthenticationFailed"
-        if "invalid" in msg.lower() or "bad request" in msg.lower():
-            return "InvalidRequest"
-        return "Unknown"
-
-    def _suggest_next_steps(self, cause: str) -> Tuple[bool, List[str]]:
-        """Return whether the issue can be auto-resolved and suggested actions."""
-        actions: List[str] = []
-        if cause == "Timeout":
-            actions.append("Retry operation with exponential backoff")
-        elif cause == "NetworkError":
-            actions.append("Verify network connectivity and proxy settings")
-        elif cause == "PermissionDenied":
-            actions.append("Check initiator privileges or request elevation")
-        elif cause == "RateLimit":
-            actions.append("Throttle requests and wait before retrying")
-        elif cause == "AuthenticationFailed":
-            actions.append("Refresh authentication tokens and retry")
-        elif cause == "NotFound":
-            actions.append("Validate identifiers or create missing resource")
-        elif cause == "InvalidRequest":
-            actions.append("Correct request parameters and resubmit")
-        else:
-            return False, ["Unable to determine resolution"]
-        return True, actions
 
     def _dispatch(self, issue: Dict[str, Any], context: Dict[str, Any]) -> ReasoningResult:
         """Route issue types to the correct handler."""

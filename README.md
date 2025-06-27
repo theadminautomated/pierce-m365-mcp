@@ -86,7 +86,6 @@ The Internal Reasoning Engine aggregates session context, historical actions, an
 
 The release candidate introduces an improved context aggregation routine that normalizes session data and removes ambiguity before analysis. This enhancement enables more accurate corrections and allows the engine to generate self-healing plans with minimal iteration.
 
-The latest version expands root-cause analysis and automatically suggests corrective actions. Environment information such as host name and Python version is captured for deeper diagnostics, and the engine offers actionable remediation steps (retry, throttling, privilege checks) when tool errors occur.
 
 The engine now performs multi-iteration analysis. When an issue cannot be resolved on the first pass, the engine automatically retries with updated context and suggested corrections up to three times before escalating to human review. Every attempt is fully audit logged.
 
