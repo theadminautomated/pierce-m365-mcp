@@ -217,6 +217,18 @@ a Windows service or a systemd unit which launches `watchdog.ps1`. Run the
 script with administrative privileges so the server starts automatically and
 recovers from failures.
 
+### Container Deployment
+Build the included Docker image to run the server behind a lightweight REST API:
+
+```bash
+docker build -t pierce-mcp .
+docker run -p 8080:8080 pierce-mcp
+```
+
+The container launches a FastAPI gateway that relays requests to the PowerShell
+orchestration engine. Specify an alternate script path with the `MCP_SCRIPT`
+environment variable if required.
+
 ### Enterprise Deployment
 For production environments, refer to the deployment guide in `/docs/deployment/` for:
 - Service account configuration
@@ -252,6 +264,10 @@ For production environments, refer to the deployment guide in `/docs/deployment/
 ```
 
 ## API REFERENCE
+
+When running in the Docker container, the server exposes these tools via a
+simple REST interface on port `8080`. Issue a `POST` to `/tools/call` with the
+tool name and parameters to execute a workflow.
 
 ### Core Tools
 - `deprovision_account`: Complete account deprovisioning workflow
