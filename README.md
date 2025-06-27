@@ -49,6 +49,8 @@ src/
 - **Workflow Planning**: Multi-step automation with dependency resolution
 - **Context Persistence**: Advanced vector-based memory with semantic search
 - **Self-Correction**: Automatic error detection, analysis, and remediation
+- **Fuzzy Entity Correction**: Misspelled users and mailboxes are automatically
+  corrected using context-driven fuzzy matching
 - **Internal Reasoning Engine**: Aggregates context to resolve ambiguity and errors automatically
 - **Autonomous Execution**: All tools run without confirmation prompts; the reasoning engine handles corrections silently
 - **Rule-Based Fallback Parsing**: Regex and dictionary extraction when AI confidence is low
@@ -82,6 +84,8 @@ The system includes a sophisticated, open-source vector memory bank that provide
 The Internal Reasoning Engine aggregates session context, historical actions, and tool outputs to automatically analyze errors or ambiguous input. It now performs predictive plan optimization and dynamic rerouting when failures occur. All checkpoints are persisted for recovery and no workflow requires human confirmation.
 
 The release candidate introduces an improved context aggregation routine that normalizes session data and removes ambiguity before analysis. This enhancement enables more accurate corrections and allows the engine to generate self-healing plans with minimal iteration.
+
+The engine now performs fuzzy matching against organizational directories when validation errors occur, automatically correcting mistyped user or mailbox names whenever possible.
 
 **Python Implementation**
 

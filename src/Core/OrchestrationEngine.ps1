@@ -136,14 +136,18 @@ class OrchestrationEngine {
             # Validate entities against Pierce County standards
             $validationResult = $this.ValidationEngine.ValidateEntities($extractedEntities, $session)
             if (-not $validationResult.IsValid) {
-                $reasoning = $this.ReasoningEngine.Resolve(@{
-                    Type = 'ValidationFailure'
-                    ValidationResult = $validationResult
-                    Request = $request
-                }, $session)
-                $session.AddContext('Reasoning', $reasoning)
-                if (-not $reasoning.Resolved) {
-                    return [OrchestrationResult]::Failure($sessionId, $validationResult.Errors)
+                $extractedEntities = $this.SelfCorrectEntities($extractedEntities, $session)
+                $validationResult = $this.ValidationEngine.ValidateEntities($extractedEntities, $session)
+                if (-not $validationResult.IsValid) {
+                    $reasoning = $this.ReasoningEngine.Resolve(@{
+                        Type = 'ValidationFailure'
+                        ValidationResult = $validationResult
+                        Request = $request
+                    }, $session)
+                    $session.AddContext('Reasoning', $reasoning)
+                    if (-not $reasoning.Resolved) {
+                        return [OrchestrationResult]::Failure($sessionId, $validationResult.Errors)
+                    }
                 }
             }
 
@@ -421,6 +425,8 @@ class OrchestrationEngine {
             ErrorType = $error.GetType().Name
             SessionId = $session.SessionId
         })
+
+        $this.ConfidenceEngine.RegisterOutcome('SelfHealing', $false)
         
         # Implement adaptive error recovery strategies
         $healingStrategies = @(
@@ -439,6 +445,11 @@ class OrchestrationEngine {
                         ToolName = $toolStep.ToolName
                         SessionId = $session.SessionId
                     })
+                    $this.ConfidenceEngine.RegisterOutcome('SelfHealing', $true)
+                    $metrics = $this.ConfidenceEngine.Evaluate('SelfHealing', 0.95)
+                    if (-not $metrics.IsHighConfidence) {
+                        $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='SelfHealing'; Metrics=$metrics }, $session) | Out-Null
+                    }
                     return $result
                 }
             }
@@ -450,8 +461,37 @@ class OrchestrationEngine {
                 continue
             }
         }
-        
+
+        $metrics = $this.ConfidenceEngine.Evaluate('SelfHealing', 0.95)
+        if (-not $metrics.IsHighConfidence) {
+            $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='SelfHealing'; Metrics=$metrics }, $session) | Out-Null
+        }
+
         return [SelfHealingResult]::Failure("All healing strategies exhausted")
+    }
+
+    hidden [EntityCollection] SelfCorrectEntities([EntityCollection]$entities, [OrchestrationSession]$session) {
+        foreach ($user in $entities.Users) {
+            if ($user.HasValidationErrors -and -not ($user.Email -match '@piercecountywa\.gov$')) {
+                $corrected = ($user.Email.Split('@')[0]) + '@piercecountywa.gov'
+                $session.AuditTrail.Add("Corrected user email to $corrected")
+                $user.Email = $corrected
+                $user.HasValidationErrors = $false
+                $user.ValidationErrors.Clear()
+            }
+        }
+
+        foreach ($mailbox in $entities.Mailboxes) {
+            if ($mailbox.HasValidationErrors -and -not ($mailbox.Email -match '@')) {
+                $corrected = "$($mailbox.Email)@piercecountywa.gov"
+                $session.AuditTrail.Add("Corrected mailbox email to $corrected")
+                $mailbox.Email = $corrected
+                $mailbox.HasValidationErrors = $false
+                $mailbox.ValidationErrors.Clear()
+            }
+        }
+
+        return $entities
     }
 
     hidden [void] SaveCheckpoint([hashtable]$context, [ToolStep]$toolStep, [ToolExecutionResult]$result, [OrchestrationSession]$session) {
