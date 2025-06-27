@@ -177,6 +177,23 @@ class SemanticIndex {
         
         return $results
     }
+
+    [List[SemanticSearchResult]] SearchWithFallback([string]$query, [int]$maxResults) {
+        $vector = $this.GenerateEmbedding($query)
+        $results = $this.Search($vector, $maxResults)
+
+        if ($results.Count -eq 0 -or ($results[0].Similarity -lt 0.5)) {
+            $regex = [Regex]::Escape($query)
+            foreach ($id in $this.ContentMap.Keys) {
+                if ($this.ContentMap[$id] -match $regex) {
+                    $results.Add([SemanticSearchResult]@{ Id=$id; Similarity=1.0; Content=$this.ContentMap[$id] })
+                    if ($results.Count -ge $maxResults) { break }
+                }
+            }
+        }
+
+        return $results
+    }
     
     [List[string]] FindSimilarContent([string]$content, [double]$threshold = 0.8, [int]$maxResults = 5) {
         $similarContent = [List[string]]::new()

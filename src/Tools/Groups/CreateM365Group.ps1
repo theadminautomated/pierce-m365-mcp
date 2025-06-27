@@ -145,86 +145,61 @@ class M365GroupTool {
     [hashtable] Execute([hashtable]$params) {
         $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         $sessionId = [Guid]::NewGuid().ToString()
-        
+        $context = @{ Params = $params; Group = $null; Audit = $null; Response = $null }
+
+        $states = @{
+            Start = @{ Handler = {
+                $context.Audit = @{
+                    sessionId = $sessionId
+                    timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                    initiator = $context.Params.Initiator ?? "MCPAgent"
+                    reason = $context.Params.Reason ?? "Automated M365 group creation"
+                    complianceFlags = @()
+                }
+                $this.Logger.LogInfo("M365 group creation session started", @{ sessionId = $sessionId; displayName = $context.Params.DisplayName })
+                if (-not $context.Params.MailNickname) { $context.Params.MailNickname = $this.GenerateMailNickname($context.Params.DisplayName, $context.Params.Department) }
+                return 'Validate'
+            } }
+            Validate = @{ Handler = {
+                $val = $this.ValidateInputs($context.Params)
+                if ($val.HasErrors) { $context.Response = $this.BuildErrorResponse($val.Errors, $context.Audit); return $null }
+                return 'Security'
+            } }
+            Security = @{ Handler = {
+                $sec = $this.Security.ValidateGroupCreationRequest($context.Params.DisplayName, $context.Params.Owners, $context.Audit.initiator)
+                if (-not $sec.IsAuthorized) { $context.Response = $this.BuildSecurityErrorResponse($sec, $context.Audit); return $null }
+                return 'Connect'
+            } }
+            Connect = @{ Handler = {
+                $conn = $this.InitializeGraphConnection()
+                if (-not $conn.Success) { $context.Response = $this.BuildConnectionErrorResponse($conn, $context.Audit); return $null }
+                return 'Create'
+            } }
+            Create = @{ Handler = {
+                $grp = $this.CreateM365Group($context.Params, $sessionId)
+                if (-not $grp.Success) { $context.Response = $this.BuildGroupCreationErrorResponse($grp, $context.Audit); return $null }
+                $context.Group = $grp.Group
+                return 'Membership'
+            } }
+            Membership = @{ Handler = {
+                $mem = $this.ConfigureGroupMembership($context.Group, $context.Params, $sessionId)
+                $context.Response = $this.BuildSuccessResponse($context.Group, $mem, $context.Audit, $stopwatch.ElapsedMilliseconds)
+                $this.Logger.LogInfo("M365 group creation completed", @{ sessionId = $sessionId; groupId = $context.Group.Id })
+                return $null
+            } }
+        }
+
         try {
-            # Initialize audit trail
-            $auditTrail = @{
-                sessionId = $sessionId
-                timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                initiator = $params.Initiator ?? "MCPAgent"
-                reason = $params.Reason ?? "Automated M365 group creation"
-                complianceFlags = @()
-            }
-
-            $this.Logger.LogInfo("M365 group creation session started", @{
-                sessionId = $sessionId
-                displayName = $params.DisplayName
-                owners = $params.Owners
-                initiator = $auditTrail.initiator
-            })
-
-            # Generate mail nickname if not provided
-            if (-not $params.MailNickname) {
-                $params.MailNickname = $this.GenerateMailNickname($params.DisplayName, $params.Department)
-            }
-
-            # Validate inputs
-            $validationResult = $this.ValidateInputs($params)
-            if ($validationResult.HasErrors) {
-                return $this.BuildErrorResponse($validationResult.Errors, $auditTrail)
-            }
-
-            # Security validation
-            $securityValidation = $this.Security.ValidateGroupCreationRequest($params.DisplayName, $params.Owners, $auditTrail.initiator)
-            if (-not $securityValidation.IsAuthorized) {
-                return $this.BuildSecurityErrorResponse($securityValidation, $auditTrail)
-            }
-
-            # Initialize Graph connection
-            $connectionResult = $this.InitializeGraphConnection()
-            if (-not $connectionResult.Success) {
-                return $this.BuildConnectionErrorResponse($connectionResult, $auditTrail)
-            }
-
-            # Create M365 group
-            $groupResult = $this.CreateM365Group($params, $sessionId)
-            if (-not $groupResult.Success) {
-                return $this.BuildGroupCreationErrorResponse($groupResult, $auditTrail)
-            }
-
-            # Configure membership
-            $membershipResult = $this.ConfigureGroupMembership($groupResult.Group, $params, $sessionId)
-
-            # Build comprehensive response
-            $response = $this.BuildSuccessResponse($groupResult, $membershipResult, $auditTrail, $stopwatch.ElapsedMilliseconds)
-            
-            $this.Logger.LogInfo("M365 group creation completed", @{
-                sessionId = $sessionId
-                groupId = $groupResult.Group.Id
-                emailAddress = $groupResult.Group.Mail
-                duration = $stopwatch.ElapsedMilliseconds
-                status = $response.status
-            })
-
-            return $response
-
+            $sm = [StateMachine]::new($states, 'Start', $this.Logger)
+            $sm.Run($context)
         } catch {
-            $this.Logger.LogError("Critical error in M365 group creation", @{
-                sessionId = $sessionId
-                error = $_.Exception.Message
-                stackTrace = $_.ScriptStackTrace
-            })
-
-            return @{
-                status = "failed"
-                error = "Critical system error during group creation"
-                sessionId = $sessionId
-                timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                auditTrail = $auditTrail
-            }
+            $this.Logger.LogError("Critical error in M365 group creation", @{ sessionId = $sessionId; error = $_.Exception.Message })
+            $context.Response = @{ status = 'failed'; error = 'Critical system error during group creation'; sessionId = $sessionId; timestamp = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffZ'); auditTrail = $context.Audit }
         } finally {
             $stopwatch.Stop()
         }
+
+        return $context.Response
     }
 
     [string] GenerateMailNickname([string]$displayName, [string]$department) {

@@ -38,7 +38,9 @@ $coreModules = @(
     'ConfidenceEngine.ps1',     # Statistical confidence intervals
     'CodeExecutionEngine.ps1',  # Sandboxed code execution
     'HealthMonitor.ps1',       # Health monitoring
+    'StateMachine.ps1',        # Table-driven state machines
     'InternalReasoningEngine.ps1', # Automated reasoning and correction
+    'RuleBasedParser.ps1',     # Fallback regex/dictionary parser
     'EntityExtractor.ps1',      # Entity extraction
     'OrchestrationEngine.ps1'   # Main orchestration engine
 )
