@@ -23,5 +23,11 @@ class ReasoningTests(unittest.TestCase):
         self.assertFalse(res.resolved)
         self.assertIn("Escalation", res.resolution)
 
+    def test_tool_error_root_cause(self):
+        issue = {"Type": "ToolError", "Error": "Network timeout"}
+        res = self.engine.resolve(issue, {})
+        self.assertTrue(res.resolved)
+        self.assertIn("Retry operation", " ".join(res.actions))
+
 if __name__ == '__main__':
     unittest.main()
