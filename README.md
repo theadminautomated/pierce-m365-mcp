@@ -28,7 +28,8 @@ src/
 │   ├── SecurityManager.ps1        # Security enforcement & threat detection
 │   ├── ContextManager.ps1         # Persistent context & relationship tracking
 │   ├── VectorMemoryBank.ps1       # Advanced vector-based memory system
-│   ├── InternalReasoningEngine.ps1 # Automated reasoning and resolution
+│   ├── InternalReasoningEngine.ps1 # Automated reasoning and resolution (legacy PowerShell)
+│   ├── ../python/internal_reasoning_engine.py # Python-based reasoning engine
 │   ├── ConfidenceEngine.ps1       # Statistical confidence interval engine
 │   ├── CodeExecutionEngine.ps1    # Sandboxed code execution service
 │   ├── WebSearchEngine.ps1        # Lightweight web search for reasoning
@@ -79,6 +80,10 @@ The system includes a sophisticated, open-source vector memory bank that provide
 
 ### Internal Reasoning Engine
 The Internal Reasoning Engine aggregates session context, historical actions, and tool outputs to automatically analyze errors or ambiguous input. It now performs predictive plan optimization and dynamic rerouting when failures occur. All checkpoints are persisted for recovery and no workflow requires human confirmation.
+
+**Python Implementation**
+
+To support advanced reasoning and easier integration with AI libraries, the reasoning component has been refactored into a standalone Python module located in `src/python/internal_reasoning_engine.py`. The PowerShell orchestration engine invokes this module for complex analysis, ensuring language-agnostic operation and modern extensibility.
 
 ```powershell
 $issue = @{ Type = 'ValidationFailure'; ValidationResult = $result }
@@ -164,12 +169,15 @@ $search = $server.OrchestrationEngine.WebSearchEngine.Search('m365 mailbox deleg
 - Appropriate M365 administrative permissions
 - Visual Studio Code (for MCP integration)
 - Copilot Studio or AIFoundry compatible environment
+- Python 3.10+ (for the internal reasoning engine)
+- `requests` library for Python
 
 ### Quick Start
 1. Clone the repository to your local machine
 2. Configure the MCP server using `.vscode/mcp.json` (works in VS Code, Copilot Studio, or AIFoundry)
 3. Initialize the tool registry with your organizational parameters
-4. Begin issuing natural language automation requests
+4. Install Python dependencies with `pip install -r requirements.txt`
+5. Begin issuing natural language automation requests
 
 ### Autostart Service
 Use `scripts/install-autostart.ps1` to register the watchdog service that keeps
