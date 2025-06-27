@@ -32,6 +32,7 @@ class OrchestrationEngine {
     hidden [InternalReasoningEngine] $ReasoningEngine
     hidden [ConfidenceEngine] $ConfidenceEngine
     hidden [CodeExecutionEngine] $CodeExecutionEngine
+    hidden [System.Collections.Generic.List[hashtable]] $Checkpoints
     
     OrchestrationEngine([Logger]$logger) {
         $this.Memory = [ConcurrentDictionary[string, object]]::new()
@@ -47,6 +48,7 @@ class OrchestrationEngine {
         $this.CodeExecutionEngine = [CodeExecutionEngine]::new($logger)
         $this.ReasoningEngine = [InternalReasoningEngine]::new($logger, $this.ContextManager, $this.CodeExecutionEngine)
         $this.ConfidenceEngine = [ConfidenceEngine]::new($logger)
+        $this.Checkpoints = [System.Collections.Generic.List[hashtable]]::new()
         
         $this.InitializeEngine()
     }
@@ -218,7 +220,9 @@ class OrchestrationEngine {
             ToolCount = $toolChain.Count
             SessionId = $session.SessionId
         })
-        
+
+        $plan = $this.ReasoningEngine.EvaluateAndOptimizePlan($plan, $entities, $session)
+
         return $plan
     }
     
@@ -247,6 +251,9 @@ class OrchestrationEngine {
                 $toolResult = $tool.Execute($executionContext)
                 $results.Add($toolResult)
 
+                # Persist checkpoint after each step for recovery
+                $this.SaveCheckpoint($context, $toolStep, $toolResult, $session)
+
                 # Update context with results for next tool
                 $this.UpdateContextFromResult($context, $toolResult)
 
@@ -256,6 +263,9 @@ class OrchestrationEngine {
                 if (-not $toolMetrics.IsHighConfidence) {
                     $this.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='ToolExecution'; Metrics=$toolMetrics; Tool=$toolStep.ToolName }, $session) | Out-Null
                 }
+
+                # Adaptive planning based on result
+                $plan = $this.ReasoningEngine.EvaluateNextStep($plan, $toolStep.Index, $toolResult, $session)
                 
                 # Check for early termination conditions
                 if ($toolResult.Status -eq "Failed" -and $toolStep.IsCritical) {
@@ -422,6 +432,12 @@ class OrchestrationEngine {
         }
         
         return [SelfHealingResult]::Failure("All healing strategies exhausted")
+    }
+
+    hidden [void] SaveCheckpoint([hashtable]$context, [ToolStep]$toolStep, [ToolExecutionResult]$result, [OrchestrationSession]$session) {
+        $checkpoint = @{ Index = $toolStep.Index; Tool = $toolStep.ToolName; Context = $context.Clone(); Result = $result; Timestamp = Get-Date }
+        $this.Checkpoints.Add($checkpoint)
+        $this.Logger.Debug('Checkpoint saved', @{ SessionId = $session.SessionId; Step = $toolStep.Index })
     }
     
     [void] Dispose() {

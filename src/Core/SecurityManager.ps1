@@ -293,6 +293,12 @@ class SecurityManager {
             $result.Reason = "Tool execution outside allowed time window"
             return $result
         }
+
+        if (-not $this.ValidateMailboxAssignmentPolicy($toolStep, $securityContext.Initiator)) {
+            $result.IsAuthorized = $false
+            $result.Reason = 'Mailbox assignment policy violation'
+            return $result
+        }
         
         $result.IsAuthorized = $true
         $result.AuthorizedAt = Get-Date
@@ -380,6 +386,39 @@ class SecurityManager {
         }
         
         return $false
+    }
+
+    hidden [bool] ValidateMailboxAssignmentPolicy([ToolStep]$toolStep, [string]$initiator) {
+        if ($toolStep.ToolName -ne 'add_mailbox_permissions') { return $true }
+
+        $mailbox = $toolStep.Parameters['Mailbox']
+        if (-not $mailbox) { return $true }
+
+        try {
+            $mailboxObj = Get-Mailbox -Identity $mailbox -ErrorAction Stop
+            if ($mailboxObj.RecipientTypeDetails -eq 'UserMailbox') {
+                $ea1 = $this.GetUserExtensionAttribute($initiator, 'extensionAttribute1')
+                if ($ea1 -ne '119') { return $false }
+            }
+        } catch {
+            return $false
+        }
+
+        return $true
+    }
+
+    hidden [string] GetUserExtensionAttribute([string]$user, [string]$attribute) {
+        try {
+            $adUser = Get-ADUser -Identity $user -Properties $attribute -ErrorAction Stop
+            return $adUser.$attribute
+        } catch {
+            try {
+                $mgUser = Get-MgUser -UserId $user -Property $attribute -ErrorAction Stop
+                return $mgUser.AdditionalProperties[$attribute]
+            } catch {
+                return $null
+            }
+        }
     }
     
     hidden [bool] IsPrivilegedUser([string]$title) {
