@@ -17,6 +17,8 @@ using namespace System.Collections.Concurrent
 using namespace System.Numerics
 using namespace System.IO
 using namespace System.Text.Json
+using namespace System.Security.Cryptography
+using namespace System.Text
 
 class VectorMemoryBank {
     hidden [Logger] $Logger
@@ -31,6 +33,10 @@ class VectorMemoryBank {
     hidden [double] $SimilarityThreshold = 0.75
     hidden [int] $MaxMemoryItems = 10000
     hidden [DateTime] $LastCleanup
+    hidden [int] $LowPriorityWindowSize = 50
+    hidden [double] $LowPriorityThreshold = 0.3
+    hidden [Queue[hashtable]] $LowPriorityQueue
+    hidden [HashSet[string]] $LowPriorityHashes
     
     VectorMemoryBank([Logger]$logger, [string]$storagePath) {
         $this.Logger = $logger
@@ -42,6 +48,8 @@ class VectorMemoryBank {
         $this.PatternAnalyzer = [PatternAnalyzer]::new($logger)
         $this.Persistence = [MemoryPersistence]::new($storagePath, $logger)
         $this.LastCleanup = Get-Date
+        $this.LowPriorityQueue = [Queue[hashtable]]::new()
+        $this.LowPriorityHashes = [HashSet[string]]::new()
         
         $this.InitializeMemoryBank()
     }
@@ -77,12 +85,23 @@ class VectorMemoryBank {
     
     [string] StoreMemory([string]$content, [string]$context, [hashtable]$metadata, [string]$sessionId) {
         try {
+            $importance = $this.CalculateImportance($content, $metadata)
+            $isLowPriority = $importance -lt $this.LowPriorityThreshold
+            $hash = $null
+            if ($isLowPriority) {
+                $hash = $this.ComputeHash($content)
+                if ($this.LowPriorityHashes.Contains($hash)) {
+                    $this.Logger.Debug("Duplicate low priority memory suppressed", @{ SessionId = $sessionId })
+                    return $null
+                }
+            }
+
             $memoryId = [Guid]::NewGuid().ToString()
             $timestamp = Get-Date
-            
+
             # Generate semantic vector for content
             $vector = $this.SemanticIndex.GenerateEmbedding($content)
-            
+
             # Create memory object
             $memory = [MemoryVector]@{
                 Id = $memoryId
@@ -94,7 +113,7 @@ class VectorMemoryBank {
                 Created = $timestamp
                 LastAccessed = $timestamp
                 AccessCount = 0
-                Importance = $this.CalculateImportance($content, $metadata)
+                Importance = $importance
                 Tags = $this.ExtractTags($content, $metadata)
             }
             
@@ -120,7 +139,11 @@ class VectorMemoryBank {
                 SessionId = $sessionId
                 Importance = $memory.Importance
             })
-            
+
+            if ($isLowPriority) {
+                $this.ManageLowPriorityWindow($memory, $hash)
+            }
+
             # Cleanup if needed
             $this.PerformMaintenanceIfNeeded()
             
@@ -299,6 +322,31 @@ class VectorMemoryBank {
                 MemoryId = $memoryId
                 Error = $_.Exception.Message
             })
+        }
+    }
+
+    hidden [string] ComputeHash([string]$text) {
+        $bytes = [Encoding]::UTF8.GetBytes($text.ToLowerInvariant())
+        $hashBytes = [SHA256]::Create().ComputeHash($bytes)
+        return ([BitConverter]::ToString($hashBytes)).Replace('-', '').ToLower()
+    }
+
+    hidden [void] ManageLowPriorityWindow([MemoryVector]$memory, [string]$hash) {
+        if ($memory.Importance -gt $this.LowPriorityThreshold) { return }
+
+        if ($this.LowPriorityHashes.Contains($hash)) {
+            $this.Logger.Debug("Duplicate low priority memory suppressed", @{ SessionId = $memory.SessionId })
+            $this.ForgetMemory($memory.Id, "Duplicate low priority")
+            return
+        }
+
+        $this.LowPriorityHashes.Add($hash) | Out-Null
+        $this.LowPriorityQueue.Enqueue(@{ Id = $memory.Id; Hash = $hash })
+
+        while ($this.LowPriorityQueue.Count -gt $this.LowPriorityWindowSize) {
+            $item = $this.LowPriorityQueue.Dequeue()
+            $this.LowPriorityHashes.Remove($item.Hash) | Out-Null
+            $this.ForgetMemory($item.Id, "Sliding window cleanup")
         }
     }
     

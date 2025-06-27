@@ -69,6 +69,7 @@ The system includes a sophisticated, open-source vector memory bank that provide
 - **Entity Intelligence**: Deep understanding of user, mailbox, and resource relationships
 - **Pattern Recognition**: Automated detection of operational patterns and anomalies
 - **Predictive Analytics**: AI-driven predictions for user needs and system optimization
+- **Sliding Window Memory**: Low-importance context stored using a 50-item sliding window to control growth and remove duplicates
 
 ### Internal Reasoning Engine
 The Internal Reasoning Engine aggregates session context, historical actions, and tool outputs to automatically analyze errors or ambiguous input. It provides corrective suggestions and is triggered whenever validation fails or a tool encounters an unexpected state.
@@ -272,6 +273,9 @@ For production environments, refer to the deployment guide in `/docs/deployment/
 - **Response Time**: Sub-second for simple operations
 - **Throughput**: 1000+ operations per hour sustained
 - **Availability**: 99.9% uptime SLA with proper deployment
+
+### System Resource Management
+- Sliding window cleanup keeps memory usage stable and prevents duplicate low-priority entries
 
 ## CHANGELOG
 
