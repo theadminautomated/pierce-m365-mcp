@@ -563,9 +563,17 @@ class PerformanceMonitor {
     hidden [ConcurrentDictionary[string, PerformanceCounter]] $Counters
     hidden [Logger] $Logger
     hidden [System.Threading.Timer] $CollectionTimer
+    hidden [long] $TotalOperations
+    hidden [long] $ErrorCount
+    hidden [TimeSpan] $AggregateDuration
+    hidden [object] $AggregateLock
     
     PerformanceMonitor([Logger]$logger) {
         $this.Logger = $logger
+        $this.TotalOperations = 0
+        $this.ErrorCount = 0
+        $this.AggregateDuration = [TimeSpan]::Zero
+        $this.AggregateLock = [object]::new()
         $this.Counters = [ConcurrentDictionary[string, PerformanceCounter]]::new()
         $this.InitializeCounters()
         $this.StartCollection()
@@ -576,9 +584,17 @@ class PerformanceMonitor {
         $counter.Start()
     }
     
-    [void] EndOperation([string]$operationName) {
+    [void] EndOperation([string]$operationName, [bool]$success = $true) {
         $counter = $this.GetOrCreateCounter($operationName)
-        $counter.End()
+        $duration = $counter.End()
+        [System.Threading.Monitor]::Enter($this.AggregateLock)
+        try {
+            $this.TotalOperations++
+            $this.AggregateDuration = $this.AggregateDuration.Add($duration)
+            if (-not $success) { $this.ErrorCount++ }
+        } finally {
+            [System.Threading.Monitor]::Exit($this.AggregateLock)
+        }
     }
     
     [PerformanceCounter] GetCounter([string]$operationName) {
@@ -615,27 +631,27 @@ class PerformanceMonitor {
         # Collect performance metrics every 30 seconds
         $this.CollectionTimer = [System.Threading.Timer]::new(
             { param($state) $state.CollectMetrics() },
+
             $this,
             30000,
             30000
         )
     }
     
-    hidden [void] CollectMetrics() {
-        try {
-            $metrics = @{}
-            foreach ($counter in $this.Counters.Values) {
-                $metrics[$counter.Name] = $counter.GetMetrics()
-            }
-            
-            $this.Logger.Info("Performance metrics collected", $metrics)
-        }
-        catch {
-            $this.Logger.Warning("Performance metrics collection failed", @{
-                Error = $_.Exception.Message
-            })
-        }
+    [long] GetTotalOperations() {
+        return $this.TotalOperations
     }
+
+    [double] GetAverageResponseTime() {
+        if ($this.TotalOperations -eq 0) { return 0 }
+        return ($this.AggregateDuration.TotalMilliseconds / $this.TotalOperations)
+    }
+
+    [double] GetErrorRate() {
+        if ($this.TotalOperations -eq 0) { return 0 }
+        return [math]::Round($this.ErrorCount / [double]$this.TotalOperations, 4)
+    }
+
     
     [void] Dispose() {
         if ($this.CollectionTimer) {
@@ -675,7 +691,7 @@ class PerformanceCounter {
         }
     }
     
-    [void] End() {
+    [TimeSpan] End() {
         [System.Threading.Monitor]::Enter($this.Lock)
         try {
             if ($this.CurrentStart -eq [DateTime]::MinValue) {
@@ -697,6 +713,7 @@ class PerformanceCounter {
             
             $this.AverageDuration = [TimeSpan]::FromTicks($this.TotalDuration.Ticks / $this.ExecutionCount)
             $this.CurrentStart = [DateTime]::MinValue
+            return $duration
         }
         finally {
             [System.Threading.Monitor]::Exit($this.Lock)
