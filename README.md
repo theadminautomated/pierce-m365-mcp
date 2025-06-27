@@ -216,6 +216,7 @@ For production environments, refer to the deployment guide in `/docs/deployment/
 - `get_ad_object_attributes`: Active Directory queries
 - `get_entra_object_attributes`: Azure AD object inspection
 - `code_execution`: Secure sandboxed script execution and validation
+- `pr_suggestion`: Automatic draft and submission of pull requests with full test logs
 
 ## MONITORING & TELEMETRY
 
@@ -256,12 +257,27 @@ For production environments, refer to the deployment guide in `/docs/deployment/
 - Automated testing and validation pipelines
 - Change approval workflows through ServiceNow
 - Documentation synchronization with code changes
+- **Internal PR Suggestion Tool**: Automatically drafts and submits pull requests for
+  all code changes, attaches test logs, and notifies maintainers. No change is merged
+  without human review and approval.
 
 ### Continuous Improvement
 - Monthly performance reviews and optimization
 - Quarterly security assessments and updates
 - Annual compliance audits and certifications
 - User feedback integration and feature development
+
+### Using the PR Suggestion Tool
+The `PRSuggestionEngine` module automates code change packaging into pull requests. Example:
+
+```powershell
+$engine = [PRSuggestionEngine]::new('C:\Repo')
+$tests = @('.\scripts\test-core-modules.ps1', '.\scripts\test-syntax.ps1')
+$engine.SuggestPullRequest('Update validation logic', $tests)
+```
+
+The engine commits local changes to a dedicated branch, runs the provided tests, creates
+a pull request via `gh`, logs the activity, and sends a Teams notification.
 
 ## TECHNICAL SPECIFICATIONS
 
