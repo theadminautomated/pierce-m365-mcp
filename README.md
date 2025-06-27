@@ -29,6 +29,7 @@ src/
 │   ├── VectorMemoryBank.ps1       # Advanced vector-based memory system
 │   ├── InternalReasoningEngine.ps1 # Automated reasoning and resolution
 │   ├── ConfidenceEngine.ps1       # Statistical confidence interval engine
+│   ├── CodeExecutionEngine.ps1    # Sandboxed code execution service
 │   └── SemanticIndex.ps1          # Open-source semantic search & embeddings
 └── Tools/                         # MCP tool implementations
     ├── Accounts/                  # Account lifecycle management
@@ -47,6 +48,7 @@ src/
 - **Self-Correction**: Automatic error detection, analysis, and remediation
 - **Internal Reasoning Engine**: Aggregates context to resolve ambiguity and errors automatically
 - **Confidence Interval Engine**: Measures statistical confidence for every action
+- **Sandboxed Code Execution**: Validate and simulate scripts in a secure sandbox
 - **Performance Learning**: Continuous optimization based on execution patterns
 - **Memory Intelligence**: Long-term organizational knowledge and pattern recognition
 
@@ -84,6 +86,13 @@ $metrics = $server.OrchestrationEngine.ConfidenceEngine.Evaluate('ToolExecution'
 if (-not $metrics.IsHighConfidence) {
     $server.OrchestrationEngine.ReasoningEngine.Resolve(@{ Type='LowConfidence'; Stage='ToolExecution'; Metrics=$metrics }, $session)
 }
+```
+
+### Sandboxed Code Execution Engine
+The Code Execution Engine executes and validates code snippets in a secure sandbox with strict timeouts and input sanitization. Use the `code/execute` API to perform dry-run syntax checks or controlled execution with full logging.
+
+```powershell
+$exec = $server.OrchestrationEngine.CodeExecutionEngine.Execute('PowerShell', $code, $params, 10, $true)
 ```
 
 ### Memory Architecture
@@ -175,6 +184,11 @@ For production environments, refer to the deployment guide in `/docs/deployment/
 "Remove all distribution list memberships for departing employees in the July 2024 termination report"
 ```
 
+### Code Execution Validation
+```
+"Test the script 'Get-Mailbox -Identity user@domain' in dry-run mode"
+```
+
 ## API REFERENCE
 
 ### Core Tools
@@ -188,6 +202,7 @@ For production environments, refer to the deployment guide in `/docs/deployment/
 - `dynamic_admin_script`: AI-generated PowerShell automation
 - `get_ad_object_attributes`: Active Directory queries
 - `get_entra_object_attributes`: Azure AD object inspection
+- `code_execution`: Secure sandboxed script execution and validation
 
 ## MONITORING & TELEMETRY
 

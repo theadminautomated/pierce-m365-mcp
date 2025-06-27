@@ -30,6 +30,7 @@ class OrchestrationEngine {
     hidden [ContextManager] $ContextManager
     hidden [InternalReasoningEngine] $ReasoningEngine
     hidden [ConfidenceEngine] $ConfidenceEngine
+    hidden [CodeExecutionEngine] $CodeExecutionEngine
     
     OrchestrationEngine([Logger]$logger) {
         $this.Memory = [ConcurrentDictionary[string, object]]::new()
@@ -41,7 +42,8 @@ class OrchestrationEngine {
         $this.SecurityManager = [SecurityManager]::new($logger)
         $this.ToolRegistry = [ToolRegistry]::new($logger)
         $this.ContextManager = [ContextManager]::new($logger)
-        $this.ReasoningEngine = [InternalReasoningEngine]::new($logger, $this.ContextManager)
+        $this.CodeExecutionEngine = [CodeExecutionEngine]::new($logger)
+        $this.ReasoningEngine = [InternalReasoningEngine]::new($logger, $this.ContextManager, $this.CodeExecutionEngine)
         $this.ConfidenceEngine = [ConfidenceEngine]::new($logger)
         
         $this.InitializeEngine()
