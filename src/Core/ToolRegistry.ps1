@@ -507,11 +507,20 @@ class ToolRegistry {
         }
         
         # Add metrics section
+        # Metrics section is appended separately to avoid any parsing issues on
+        # older PowerShell versions. Build the strings first, then append.
         $null = $sb.AppendLine('# Tool Metrics')
+
         $sb.AppendLine("") | Out-Null
-        $sb.AppendLine("Last updated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')") | Out-Null
+
+        $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        $sb.AppendLine("Last updated: $timestamp") | Out-Null
+
         $sb.AppendLine("") | Out-Null
-        $sb.AppendLine("Total tools: $($this.Tools.Count)") | Out-Null
+
+        $toolCountLine = "Total tools: {0}" -f $this.Tools.Count
+        $sb.AppendLine($toolCountLine) | Out-Null
+
         $sb.AppendLine("") | Out-Null
         
         return $sb.ToString()
