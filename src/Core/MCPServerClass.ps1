@@ -31,10 +31,11 @@ class MCPServer {
     
     hidden [void] Initialize() {
         try {
+            $psVersion = (Get-Variable -Name PSVersionTable -ValueOnly).PSVersion.ToString()
             $this.Logger.Info("Initializing Pierce County M365 MCP Server", @{
                 Version = $this.ServerVersion
                 StartTime = $this.StartTime
-                PowerShellVersion = $PSVersionTable.PSVersion.ToString()
+                PowerShellVersion = $psVersion
                 MachineName = $env:COMPUTERNAME
                 UserContext = $env:USERNAME
             })
@@ -622,7 +623,7 @@ class MCPServer {
         
         try {
             # Test PowerShell version
-            $psVersion = $PSVersionTable.PSVersion
+            $psVersion = (Get-Variable -Name PSVersionTable -ValueOnly).PSVersion
             if ($psVersion.Major -lt 7) {
                 $this.Logger.Warning("PowerShell version below 7.0", @{
                     CurrentVersion = $psVersion.ToString()
