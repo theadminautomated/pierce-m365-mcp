@@ -18,10 +18,12 @@ class MCPServer {
     hidden [string] $ServerVersion
     hidden [DateTime] $StartTime
     hidden [bool] $IsInitialized
+    hidden [ServerMode] $Mode
     
-    MCPServer([Logger]$logger, [hashtable]$config) {
+    MCPServer([Logger]$logger, [hashtable]$config, [ServerMode]$mode) {
         $this.Logger = $logger
         $this.Configuration = $config
+        $this.Mode = $mode
         $this.ServerVersion = "2.1.0-rc"
         $this.StartTime = Get-Date
         $this.IsInitialized = $false
@@ -44,9 +46,11 @@ class MCPServer {
             $this.PerformanceMonitor = [PerformanceMonitor]::new($this.Logger)
             $this.HealthMonitor = [HealthMonitor]::new($this.Logger)
             
-            # Initialize AI manager and orchestration engine
-            $this.AIManager = [AIManager]::new($this.Logger, $this.Configuration)
-            $this.OrchestrationEngine = [OrchestrationEngine]::new($this.Logger, $this.AIManager)
+            # Initialize AI manager based on server mode
+            if ($this.Mode -ne [ServerMode]::JiraAutomationNoAI) {
+                $this.AIManager = [AIManager]::new($this.Logger, $this.Configuration)
+            }
+            $this.OrchestrationEngine = [OrchestrationEngine]::new($this.Logger, $this.AIManager, $this.Mode)
             $this.AsyncProcessor = [AsyncRequestProcessor]::new($this.OrchestrationEngine, $this.Logger, 4)
             
             # Register enterprise tools

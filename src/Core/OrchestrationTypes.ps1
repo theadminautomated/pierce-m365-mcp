@@ -24,6 +24,12 @@ enum ToolExecutionStatus {
     Retrying
 }
 
+enum ServerMode {
+    Admin
+    JiraAutomation
+    JiraAutomationNoAI
+}
+
 class OrchestrationRequest {
     [string] $Type
     [string] $Input

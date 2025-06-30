@@ -35,8 +35,9 @@ class OrchestrationEngine {
     hidden [CodeExecutionEngine] $CodeExecutionEngine
     hidden [WebSearchEngine] $WebSearchEngine
     hidden [System.Collections.Generic.List[hashtable]] $Checkpoints
-    
-    OrchestrationEngine([Logger]$logger, [AIManager]$aiManager) {
+    hidden [ServerMode] $Mode
+
+    OrchestrationEngine([Logger]$logger, [AIManager]$aiManager, [ServerMode]$mode) {
         $this.Memory = [ConcurrentDictionary[string, object]]::new()
         $this.Tools = [ConcurrentDictionary[string, object]]::new()
         $this.ActiveSessions = [ConcurrentDictionary[string, object]]::new()
@@ -48,6 +49,7 @@ class OrchestrationEngine {
         $this.ToolRegistry = [ToolRegistry]::new($logger)
         $this.ContextManager = [ContextManager]::new($logger)
         $this.AIManager = $aiManager
+        $this.Mode = $mode
         $this.CodeExecutionEngine = [CodeExecutionEngine]::new($logger)
         $this.WebSearchEngine = [WebSearchEngine]::new($logger)
         $this.ReasoningEngine = [InternalReasoningEngine]::new($logger, $this.ContextManager, $this.CodeExecutionEngine)
@@ -58,7 +60,7 @@ class OrchestrationEngine {
     }
     
     hidden [void] InitializeEngine() {
-        $this.Logger.Info("Initializing Enterprise Orchestration Engine")
+        $this.Logger.Info("Initializing Enterprise Orchestration Engine", @{ Mode = $this.Mode })
         
         try {
             # Load organizational context and standards
