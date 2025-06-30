@@ -22,7 +22,15 @@ param(
     [string]$Mode = 'Admin'
 )
 
-if ($env:MCP_MODE) { $Mode = $env:MCP_MODE }
+if ($env:MCP_MODE) {
+    $validModes = @('Admin', 'JiraAutomation', 'JiraAutomationNoAI')
+    $trimmedMode = $env:MCP_MODE.Trim()
+    if ($validModes -contains $trimmedMode) {
+        $Mode = $trimmedMode
+    } else {
+        Write-Warning "Invalid MCP_MODE value: '$env:MCP_MODE'. Falling back to default Mode: '$Mode'."
+    }
+}
 
 # Set strict mode and error handling
 Set-StrictMode -Version Latest
