@@ -407,6 +407,7 @@ a pull request via `gh`, logs the activity, and sends a Teams notification.
 - Advanced entity extraction and validation
 - Rule-based parsing fallback for low-confidence scenarios
 - Table-driven state machines for deterministic workflows
+- Added automated workspace documentation via `docs/AGENTS.md`
 
 ### Version 1.0.1 (Legacy)
 - Basic MCP server implementation
