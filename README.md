@@ -237,6 +237,17 @@ AI providers are defined in `mcp.config.json`. Each provider entry includes an e
 Swap providers or add new ones by editing this file and restarting the server. No code changes are required.
 The server validates that at least one provider is defined and that `DefaultAIProvider` matches an entry in the `AIProviders` array.
 
+### Server Modes
+The server can operate in three modes depending on the invocation context.
+
+| Mode | Description |
+|------|-------------|
+| **Admin** | Direct CLI or AI driven administration. All features and AI based reasoning are enabled. |
+| **JiraAutomation** | Triggered automatically by Jira issues. AI assistance is permitted for entity parsing and workflow orchestration. |
+| **JiraAutomationNoAI** | Used when Jira automation must run without any AI services. Entity parsing and orchestration rely only on deterministic rules. |
+
+Specify the desired mode with the `-Mode` parameter or the `MCP_MODE` environment variable when starting `MCPServer.ps1`.
+
 ### Autostart Service
 Use `scripts/install-autostart.ps1` to register the watchdog service that keeps
 the MCP server running. The script detects Windows or Linux and installs either

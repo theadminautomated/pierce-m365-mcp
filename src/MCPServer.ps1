@@ -17,8 +17,20 @@
 param(
     [string]$LogLevel = "INFO",
     [string]$ConfigPath = $null,
-    [switch]$EnableDiagnostics = $false
+    [switch]$EnableDiagnostics = $false,
+    [ValidateSet('Admin','JiraAutomation','JiraAutomationNoAI')]
+    [string]$Mode = 'Admin'
 )
+
+if ($env:MCP_MODE) {
+    $validModes = @('Admin', 'JiraAutomation', 'JiraAutomationNoAI')
+    $trimmedMode = $env:MCP_MODE.Trim()
+    if ($validModes -contains $trimmedMode) {
+        $Mode = $trimmedMode
+    } else {
+        Write-Warning "Invalid MCP_MODE value: '$env:MCP_MODE'. Falling back to default Mode: '$Mode'."
+    }
+}
 
 # Set strict mode and error handling
 Set-StrictMode -Version Latest
@@ -81,7 +93,8 @@ function Initialize-Configuration {
     param(
         [string]$LogLevel,
         [string]$ConfigPath,
-        [bool]$EnableDiagnostics
+        [bool]$EnableDiagnostics,
+        [string]$Mode
     )
     
     $config = @{
@@ -89,6 +102,7 @@ function Initialize-Configuration {
         ToolsDirectory = Join-Path $moduleRoot "tools"
         EnableDiagnostics = $EnableDiagnostics
         ServerVersion = "2.1.0-rc"
+        Mode = $Mode
     }
     
     # Load configuration file if specified, otherwise try repo config
@@ -131,19 +145,26 @@ function Validate-Configuration {
             throw "DefaultAIProvider '$default' not found in AIProviders list"
         }
     }
+
+    if (-not $Config.ContainsKey('Mode')) { throw "Server mode not specified" }
 }
 
 function Start-MCPServer {
     try {
         # Initialize configuration
-        $config = Initialize-Configuration -LogLevel $LogLevel -ConfigPath $ConfigPath -EnableDiagnostics $EnableDiagnostics
+        $config = Initialize-Configuration -LogLevel $LogLevel -ConfigPath $ConfigPath -EnableDiagnostics $EnableDiagnostics -Mode $Mode
         
         # Initialize logger
         $logLevelEnum = [LogLevel]::Parse([LogLevel], $config.LogLevel, $true)
         $script:logger = [Logger]::new($logLevelEnum)
         
         # Create and start server
-        $server = [MCPServer]::new($script:logger, $config)
+        try {
+            $serverMode = [System.Enum]::Parse([ServerMode], $config.Mode, $true)
+        } catch {
+            throw "Invalid server mode: $($config.Mode)"
+        }
+        $server = [MCPServer]::new($script:logger, $config, $serverMode)
         $script:orchestrationEngine = $server.OrchestrationEngine
         $script:performanceMonitor = $server.PerformanceMonitor
         
