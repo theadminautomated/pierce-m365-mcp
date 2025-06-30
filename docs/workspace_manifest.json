@@ -1,0 +1,53 @@
+{
+  "tools": {
+    "PierceCountyM365Admin": {
+      "path": "./src/MCPServer.ps1",
+      "linkedInMCP": true
+    }
+  },
+  "orphans": [
+    "./scripts/docker-build.ps1",
+    "./scripts/docker-deploy.ps1",
+    "./scripts/docker-health-check.ps1",
+    "./scripts/heavy-load-test.ps1",
+    "./scripts/install-autostart.ps1",
+    "./scripts/migrate-and-validate.ps1",
+    "./scripts/suggest-pr.ps1",
+    "./scripts/test-code-execution.ps1",
+    "./scripts/test-core-modules.ps1",
+    "./scripts/test-mcp-modules.ps1",
+    "./scripts/test-memory-integration.ps1",
+    "./scripts/test-syntax.ps1",
+    "./scripts/validate-architecture.ps1",
+    "./scripts/watchdog.ps1",
+    "./src/Core/AIManager.ps1",
+    "./src/Core/AsyncRequestProcessor.ps1",
+    "./src/Core/CodeExecutionEngine.ps1",
+    "./src/Core/ConfidenceEngine.ps1",
+    "./src/Core/ContextManager.ps1",
+    "./src/Core/EntityExtractor.ps1",
+    "./src/Core/HealthMonitor.ps1",
+    "./src/Core/InternalReasoningEngine.ps1",
+    "./src/Core/Logger.ps1",
+    "./src/Core/MCPServerClass.ps1",
+    "./src/Core/OrchestrationEngine.ps1",
+    "./src/Core/OrchestrationTypes.ps1",
+    "./src/Core/PRSuggestionEngine.ps1",
+    "./src/Core/RuleBasedParser.ps1",
+    "./src/Core/SecurityManager.ps1",
+    "./src/Core/SemanticIndex.ps1",
+    "./src/Core/StateMachine.ps1",
+    "./src/Core/ToolRegistry.ps1",
+    "./src/Core/ValidationEngine.ps1",
+    "./src/Core/VectorMemoryBank.ps1",
+    "./src/Core/WebSearchEngine.ps1",
+    "./src/Mcp.Core.psm1",
+    "./src/Tools/Accounts/DeprovisionAccount.ps1",
+    "./src/Tools/Administration/DepartmentLookup.ps1",
+    "./src/Tools/Groups/CreateM365Group.ps1",
+    "./src/Tools/Mailboxes/AddPermissions.ps1",
+    "./src/Tools/Mailboxes/CreateSharedMailbox.ps1",
+    "./tests/get_entity_dicts.ps1"
+  ],
+  "deadMCP": []
+}
